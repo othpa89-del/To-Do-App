@@ -3,7 +3,7 @@ import * as XLSX from "xlsx";
 import {
   User, Building2, Printer, FileSpreadsheet, Check, Pencil, X, Square, CheckSquare,
   Bell, Settings, Search, ExternalLink, Repeat, Download, Upload, Database, Plus, Mail, Phone,
-  MessageSquare, ChevronUp, ChevronDown,
+  MessageSquare, ChevronUp, ChevronDown, Plane,
 } from "lucide-react";
 
 // --- Eurowings-Markentokens (offizielles Farbchapter) ---
@@ -627,7 +627,7 @@ export default function App() {
       <div className="screen">
         <header className="hd">
           <div className="hd-inner">
-            <div className="hd-mark" />
+            <Plane className="hd-mark" strokeWidth={2.2} />
             <div><h1>TO DO APP</h1></div>
             <div className="hd-profile">
               <label>Dein Kürzel</label>
@@ -1156,7 +1156,7 @@ const css = `
 
 .hd{background-image:linear-gradient(90deg,${C.burgundy},${C.burgundyDark});}
 .hd-inner{display:flex;align-items:center;gap:16px;padding:20px 24px;}
-.hd-mark{width:38px;height:38px;border-radius:50% 50% 50% 4px;background:${C.white};opacity:.95;flex:none;box-shadow:inset 0 0 0 7px ${C.burgundy};}
+.hd-mark{width:34px;height:34px;color:${C.white};opacity:.97;flex:none;}
 .hd h1{color:${C.white};font-size:24px;line-height:1.1;letter-spacing:.04em;}
 .hd-profile{margin-left:auto;text-align:right;}
 .hd-profile label{display:block;color:rgba(255,255,255,.82);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
