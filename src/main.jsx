@@ -6,7 +6,10 @@ import Login from "./Login.jsx";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true },
+  // Implicit Flow: Reset-/Bestätigungslinks tragen die Sitzung im URL-Hash und
+  // funktionieren so in JEDEM Browser (auch wenn die Mail-App einen anderen
+  // Browser öffnet). PKCE würde denselben Browser wie beim Anfordern verlangen.
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: "implicit" },
 });
 
 // ---------------------------------------------------------------------------
