@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 
-export default function Login({ supabase }) {
-  const [mode, setMode] = useState("signin"); // signin | signup
+export default function Login({ supabase, recovery = false, onDone }) {
+  // signin | signup | forgot | reset
+  const [mode, setMode] = useState(recovery ? "reset" : "signin");
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
+  const [pw2, setPw2] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -16,35 +18,78 @@ export default function Login({ supabase }) {
         if (error) throw error;
         setMsg("Konto erstellt. Du kannst dich jetzt anmelden.");
         setMode("signin");
+      } else if (mode === "forgot") {
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: window.location.href });
+        if (error) throw error;
+        setMsg("Falls ein Konto mit dieser E-Mail existiert, wurde ein Link zum Zurücksetzen gesendet. Bitte E-Mail prüfen.");
+      } else if (mode === "reset") {
+        if ((pw || "").length < 6) throw new Error("Passwort muss mindestens 6 Zeichen haben.");
+        if (pw !== pw2) throw new Error("Die Passwörter stimmen nicht überein.");
+        const { error } = await supabase.auth.updateUser({ password: pw });
+        if (error) throw error;
+        setMsg("Passwort geändert. Du bist jetzt angemeldet.");
+        if (onDone) setTimeout(() => onDone(), 800);
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: pw });
         if (error) throw error;
       }
     } catch (e) {
-      setErr(e.message || "Anmeldung fehlgeschlagen.");
+      setErr(e.message || "Vorgang fehlgeschlagen.");
     } finally {
       setBusy(false);
     }
   }
 
+  const sub = mode === "forgot" ? "Passwort zurücksetzen" : mode === "reset" ? "Neues Passwort" : "Anmeldung";
+  const cta = mode === "signin" ? "Anmelden" : mode === "signup" ? "Konto erstellen" : mode === "forgot" ? "Link senden" : "Passwort speichern";
+
   return (
     <div style={S.wrap}>
       <div style={S.card}>
         <div style={S.brand}>TO DO APP</div>
-        <div style={S.sub}>Anmeldung</div>
-        <input style={S.inp} type="email" placeholder="E-Mail" value={email}
-          onChange={(e) => setEmail(e.target.value)} autoComplete="username" />
-        <input style={S.inp} type="password" placeholder="Passwort" value={pw}
-          onChange={(e) => setPw(e.target.value)} autoComplete="current-password"
-          onKeyDown={(e) => e.key === "Enter" && submit()} />
+        <div style={S.sub}>{sub}</div>
+
+        {mode !== "reset" && (
+          <input style={S.inp} type="email" placeholder="E-Mail" value={email}
+            onChange={(e) => setEmail(e.target.value)} autoComplete="username" />
+        )}
+
+        {mode !== "forgot" && (
+          <input style={S.inp} type="password" placeholder={mode === "reset" ? "Neues Passwort" : "Passwort"} value={pw}
+            onChange={(e) => setPw(e.target.value)}
+            autoComplete={mode === "signin" ? "current-password" : "new-password"}
+            onKeyDown={(e) => e.key === "Enter" && mode !== "reset" && submit()} />
+        )}
+
+        {mode === "reset" && (
+          <input style={S.inp} type="password" placeholder="Neues Passwort wiederholen" value={pw2}
+            onChange={(e) => setPw2(e.target.value)} autoComplete="new-password"
+            onKeyDown={(e) => e.key === "Enter" && submit()} />
+        )}
+
         <button style={{ ...S.btn, opacity: busy ? 0.6 : 1 }} disabled={busy} onClick={submit}>
-          {busy ? "…" : mode === "signin" ? "Anmelden" : "Konto erstellen"}
+          {busy ? "…" : cta}
         </button>
+
         {err && <div style={S.err}>{err}</div>}
         {msg && <div style={S.msg}>{msg}</div>}
-        <button style={S.link} onClick={() => { setErr(""); setMsg(""); setMode(mode === "signin" ? "signup" : "signin"); }}>
-          {mode === "signin" ? "Noch kein Konto? Registrieren" : "Schon ein Konto? Anmelden"}
-        </button>
+
+        {mode === "signin" && (
+          <button style={S.link} onClick={() => { setErr(""); setMsg(""); setMode("forgot"); }}>
+            Passwort vergessen?
+          </button>
+        )}
+
+        {mode !== "reset" && (
+          <button style={S.link} onClick={() => {
+            setErr(""); setMsg("");
+            setMode(mode === "signin" ? "signup" : "signin");
+          }}>
+            {mode === "signin" ? "Noch kein Konto? Registrieren"
+              : mode === "signup" ? "Schon ein Konto? Anmelden"
+              : "Zurück zur Anmeldung"}
+          </button>
+        )}
       </div>
     </div>
   );

@@ -70,6 +70,7 @@ function unsubscribeRealtime() {
 // --- Auth-Gate ---
 function Root() {
   const [session, setSession] = useState(undefined); // undefined = lädt
+  const [recovery, setRecovery] = useState(false);   // Passwort-Zurücksetzen-Flow
 
   // WICHTIG: synchron im Render setzen. React führt die Effects von <App>
   // (Kind) VOR den Effects von Root (Eltern) aus – würde currentUserId erst
@@ -79,7 +80,10 @@ function Root() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
+    const { data: sub } = supabase.auth.onAuthStateChange((e, s) => {
+      if (e === "PASSWORD_RECOVERY") setRecovery(true);
+      setSession(s);
+    });
     return () => sub.subscription.unsubscribe();
   }, []);
 
@@ -91,6 +95,7 @@ function Root() {
   if (session === undefined) {
     return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Mulish, system-ui, sans-serif", color: "#787878" }}>Lädt …</div>;
   }
+  if (recovery) return <Login supabase={supabase} recovery onDone={() => setRecovery(false)} />;
   if (!session) return <Login supabase={supabase} />;
 
   // key = userId -> bei Anmeldung lädt App frisch aus der Cloud
