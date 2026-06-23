@@ -1180,7 +1180,9 @@ aside.panel .card{position:sticky;top:16px;}
 .field label{display:block;font-size:12px;font-weight:700;color:${C.grey};margin-bottom:5px;}
 .label-row{display:flex;align-items:center;justify-content:space-between;}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
-.ctc-root input,.ctc-root select,.ctc-root textarea{width:100%;font-family:inherit;font-size:14px;color:${C.body};background:${C.white};border:1px solid ${C.line};border-radius:8px;padding:9px 10px;outline:none;transition:.15s;}
+.row2>*{min-width:0;}
+.ctc-root input,.ctc-root select,.ctc-root textarea{width:100%;max-width:100%;min-width:0;font-family:inherit;font-size:14px;color:${C.body};background:${C.white};border:1px solid ${C.line};border-radius:8px;padding:9px 10px;outline:none;transition:.15s;}
+.ctc-root input[type="date"]{-webkit-appearance:none;appearance:none;}
 .ctc-root textarea{resize:vertical;}
 .ctc-root input:focus,.ctc-root select:focus,.ctc-root textarea:focus{border-color:${C.burgundy};box-shadow:0 0 0 3px rgba(175,30,101,.13);}
 .ctc-root select:disabled{background:${C.fill};color:${C.cool};}
