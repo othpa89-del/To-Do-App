@@ -131,6 +131,7 @@ export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [remoteTick, setRemoteTick] = useState(0);
   const [view, setView] = useState("all");
+  const [returnView, setReturnView] = useState("all"); // wohin nach dem Bearbeiten zurück
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("all");
   const [filterStatus, setFilterStatus] = useState("open");
@@ -316,9 +317,16 @@ export default function App() {
       start: t.start || "", due: t.due || "", remindLead: t.remindLead ?? 3, contact: t.contact || "", company: t.company || "",
       link: t.link || "", recurrence: t.recurrence || "none", escalation: t.escalation || "", updatedAt: t.updatedAt || "", scope,
     });
-    if (formRef.current) formRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    setReturnView(isTaskView ? view : "all"); // aktuelle Liste merken
+    setView("new");                            // ins Formular wechseln
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
-  function cancelEdit() { setEditId(null); setEditScope(null); setForm(blank); }
+  function cancelEdit() { setEditId(null); setEditScope(null); setForm(blank); setView(returnView); }
+  function newTask() {
+    const scope = (view === "personal" || view === "team") ? view : "personal";
+    setEditId(null); setEditScope(null); setForm({ ...blank, scope });
+    setReturnView(isTaskView ? view : "all"); setView("new"); window.scrollTo({ top: 0 });
+  }
 
   // Persons handlers
   function submitPerson() {
@@ -635,9 +643,9 @@ export default function App() {
             </div>
           </div>
           <nav className="tabs">
-            {["all", "personal", "team", "persons", "export"].map((v) => (
+            {["all", "personal", "team", "new", "persons", "export"].map((v) => (
               <button key={v} className={"tab" + (view === v ? " on" : "")} onClick={() => setView(v)}>
-                {v === "all" ? "Alle" : v === "persons" ? "Persons" : v === "export" ? "Druck & Export" : SCOPES[v].label}
+                {v === "all" ? "Alle" : v === "persons" ? "Persons" : v === "export" ? "Druck & Export" : v === "new" ? "Neue Aufgabe" : SCOPES[v].label}
               </button>
             ))}
             {isTaskView && <span className="tab-count">{openCount} offen · {doneCount} erledigt</span>}
@@ -850,10 +858,9 @@ export default function App() {
               <div className="data-row"><button className="btn primary" onClick={doBulkAdd}><Plus size={15} /> Aufgaben hinzufügen</button></div>
             </div>
           </div>
-        ) : (
-          /* ===================== TASKS ===================== */
-          <div className="grid">
-            <aside className="panel" ref={formRef}>
+        ) : view === "new" ? (
+          /* ============ NEUE AUFGABE / BEARBEITEN ============ */
+          <div className="formwrap" ref={formRef}>
               <div className="card">
                 <h2>{editId ? "Aufgabe bearbeiten" : "Neue Aufgabe"}</h2>
                 <div className="field"><label>Titel</label>
@@ -940,10 +947,13 @@ export default function App() {
                 </div>
                 {form.scope === "team" && !editId && <p className="hint">Team-Aufgaben sind für alle sichtbar, die diese App öffnen.</p>}
               </div>
-            </aside>
-
+          </div>
+        ) : (
+          /* ============ AUFGABEN-LISTE ============ */
+          <div className="listwrap">
             <main className="panel">
               <div className="toolbar">
+                <button className="btn primary tb-new" onClick={newTask}><Plus size={15} /> Neue Aufgabe</button>
                 <div className="tb-group"><span>Bereich</span>
                   <select value={filterCat} onChange={(e) => setFilterCat(e.target.value)}>
                     <option value="all">Alle Bereiche</option><option value="__none__">Ohne Bereich</option>
@@ -991,7 +1001,12 @@ export default function App() {
 
               {!loaded && <div className="empty">Aufgaben werden geladen …</div>}
               {loaded && list.length === 0 && (
-                <div className="empty">{search ? "Keine Treffer." : filterStatus === "erledigt" ? "Noch nichts erledigt." : "Keine Aufgaben in dieser Ansicht. Links eine neue anlegen."}</div>
+                <div className="empty">
+                  {search ? "Keine Treffer." : filterStatus === "erledigt" ? "Noch nichts erledigt." : "Keine Aufgaben in dieser Ansicht."}
+                  {!search && filterStatus !== "erledigt" && (
+                    <div style={{ marginTop: 12 }}><button className="btn primary" onClick={newTask}><Plus size={15} /> Neue Aufgabe anlegen</button></div>
+                  )}
+                </div>
               )}
 
               {!groupByCat && <ul className="tasks">{list.map(renderTask)}</ul>}
@@ -1176,6 +1191,9 @@ const css = `
 .rgroup li.more{color:${C.cool};font-weight:600;font-size:12px;}
 
 .grid{display:grid;grid-template-columns:340px 1fr;gap:20px;padding:20px 24px 40px;align-items:start;}
+.formwrap{max-width:660px;margin:0 auto;padding:20px 24px 48px;}
+.listwrap{padding:20px 24px 40px;}
+.tb-new{margin-right:auto;}
 .panel{min-width:0;}
 aside.panel .card{position:sticky;top:16px;}
 .card{background:${C.white};border:1px solid ${C.line};border-radius:12px;padding:18px;}
@@ -1340,6 +1358,8 @@ aside.panel .card{position:sticky;top:16px;}
 
 @media(max-width:860px){
   .grid{grid-template-columns:1fr;padding:16px 16px 40px;}
+  .formwrap,.listwrap{padding:16px 16px 40px;}
+  .tb-new{width:100%;justify-content:center;margin-right:0;}
   aside.panel .card{position:static;}
   .hd-profile{display:none;}
   .hd-inner{padding:16px;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));}
