@@ -15,9 +15,16 @@ import { EventEditor } from "./cal/EventEditor.jsx";
 import { Admin } from "./cal/Admin.jsx";
 import { Tasks } from "./cal/Tasks.jsx";
 
-// ---- persistente Schlüssel (alle "shared" = pro Konto, gerätübergreifend) ----
+// ---- persistente Schlüssel ----------------------------------------------
+// Konfiguration als einzelne Blobs (selten/parallel kaum bearbeitet):
 const K_USERS = "cal_users", K_AREAS = "cal_areas", K_TYPES = "cal_types",
-  K_EVENTS = "cal_events", K_TASKS = "cal_tasks", K_SETTINGS = "cal_settings";
+  K_SETTINGS = "cal_settings";
+// Termine & Aufgaben als EINZELNE Zeilen je Element (Präfix) -> robuste
+// Mehrgeräte-Sync: gleichzeitige Änderungen an verschiedenen Einträgen
+// überschreiben sich NICHT gegenseitig (kein Last-Write-Wins auf der Gesamtliste).
+const P_EVENT = "cal_event:", P_TASK = "cal_task:";
+// Legacy-Blobs (frühere Versionen) – werden einmalig migriert:
+const K_EVENTS_LEGACY = "cal_events", K_TASKS_LEGACY = "cal_tasks";
 
 async function loadJSON(key, fallback) {
   try { const r = await window.storage.get(key, true); return r && r.value ? JSON.parse(r.value) : fallback; }
@@ -25,6 +32,30 @@ async function loadJSON(key, fallback) {
 }
 async function saveJSON(key, val) {
   try { await window.storage.set(key, JSON.stringify(val), true); } catch {}
+}
+
+// Sammlung (Termine/Aufgaben) aus den Einzelzeilen laden.
+async function loadCollection(prefix) {
+  try {
+    const r = await window.storage.getAll(prefix);
+    const out = [];
+    for (const it of r.items || []) {
+      try { const o = JSON.parse(it.value); if (o && o.id) out.push(o); } catch {}
+    }
+    return out;
+  } catch { return []; }
+}
+
+// Diff-Persistenz: nur geänderte/neue Elemente schreiben, entfernte löschen.
+function persistDiff(prefix, prev, next) {
+  const prevById = new Map((prev || []).map((x) => [x.id, x]));
+  for (const x of next) {
+    if (x.id == null) continue;
+    const p = prevById.get(x.id);
+    if (!p || JSON.stringify(p) !== JSON.stringify(x)) saveJSON(prefix + x.id, x);
+    prevById.delete(x.id);
+  }
+  for (const id of prevById.keys()) { try { window.storage.delete(prefix + id); } catch {} }
 }
 
 function blankEvent(ctx) {
@@ -64,6 +95,9 @@ export default function App() {
   const [confirmDel, setConfirmDel] = useState(null);
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
+  // letzter persistierter Stand (für Diff-Persistenz pro Element)
+  const eventsRef = useRef([]);
+  const tasksRef = useRef([]);
 
   const t = theme(settings.themeMode);
 
@@ -77,16 +111,32 @@ export default function App() {
   useEffect(() => {
     let on = true;
     (async () => {
-      const [u, a, ty, ev, tk, st] = await Promise.all([
-        loadJSON(K_USERS, null), loadJSON(K_AREAS, null), loadJSON(K_TYPES, null),
-        loadJSON(K_EVENTS, []), loadJSON(K_TASKS, []), loadJSON(K_SETTINGS, null),
+      const [u, a, ty, st] = await Promise.all([
+        loadJSON(K_USERS, null), loadJSON(K_AREAS, null), loadJSON(K_TYPES, null), loadJSON(K_SETTINGS, null),
       ]);
+      let ev = await loadCollection(P_EVENT);
+      let tk = await loadCollection(P_TASK);
+      // Einmalige Migration aus früheren Einzel-Blobs in Einzelzeilen
+      if (ev.length === 0) {
+        const legacy = await loadJSON(K_EVENTS_LEGACY, []);
+        if (Array.isArray(legacy) && legacy.length) {
+          ev = legacy; for (const x of legacy) if (x.id) saveJSON(P_EVENT + x.id, x);
+          try { window.storage.delete(K_EVENTS_LEGACY); } catch {}
+        }
+      }
+      if (tk.length === 0) {
+        const legacy = await loadJSON(K_TASKS_LEGACY, []);
+        if (Array.isArray(legacy) && legacy.length) {
+          tk = legacy; for (const x of legacy) if (x.id) saveJSON(P_TASK + x.id, x);
+          try { window.storage.delete(K_TASKS_LEGACY); } catch {}
+        }
+      }
       if (!on) return;
       if (u && u.length) setUsers(u); else saveJSON(K_USERS, DEFAULT_USERS);
       if (a && a.length) setAreas(a); else saveJSON(K_AREAS, DEFAULT_AREAS);
       if (ty && ty.length) setTypes(ty); else saveJSON(K_TYPES, DEFAULT_EVENT_TYPES);
-      setEvents(Array.isArray(ev) ? ev : []);
-      setTasks(Array.isArray(tk) ? tk : []);
+      eventsRef.current = ev; setEvents(ev);
+      tasksRef.current = tk; setTasks(tk);
       if (st) setSettings((s) => ({ ...s, ...st }));
       setLoaded(true);
     })();
@@ -96,15 +146,16 @@ export default function App() {
   // ---------- Realtime: bei Remote-Änderung neu laden ----------
   useEffect(() => {
     const h = async () => {
-      const [u, a, ty, ev, tk, st] = await Promise.all([
-        loadJSON(K_USERS, null), loadJSON(K_AREAS, null), loadJSON(K_TYPES, null),
-        loadJSON(K_EVENTS, []), loadJSON(K_TASKS, []), loadJSON(K_SETTINGS, null),
+      const [u, a, ty, st] = await Promise.all([
+        loadJSON(K_USERS, null), loadJSON(K_AREAS, null), loadJSON(K_TYPES, null), loadJSON(K_SETTINGS, null),
       ]);
+      const ev = await loadCollection(P_EVENT);
+      const tk = await loadCollection(P_TASK);
       if (u && u.length) setUsers(u);
       if (a && a.length) setAreas(a);
       if (ty && ty.length) setTypes(ty);
-      setEvents(Array.isArray(ev) ? ev : []);
-      setTasks(Array.isArray(tk) ? tk : []);
+      eventsRef.current = ev; setEvents(ev);
+      tasksRef.current = tk; setTasks(tk);
       if (st) setSettings((s) => ({ ...s, ...st }));
     };
     window.addEventListener("ctc:remote", h);
@@ -112,12 +163,13 @@ export default function App() {
   }, []);
 
   // ---------- Persistenz-Wrapper ----------
+  // Termine & Aufgaben: pro Element eine eigene Zeile (Diff) -> kein Clobbering.
   const persist = {
     users: (next) => { setUsers(next); saveJSON(K_USERS, next); },
     areas: (next) => { setAreas(next); saveJSON(K_AREAS, next); },
     types: (next) => { setTypes(next); saveJSON(K_TYPES, next); },
-    events: (next) => { setEvents(next); saveJSON(K_EVENTS, next); },
-    tasks: (next) => { setTasks(next); saveJSON(K_TASKS, next); },
+    events: (next) => { persistDiff(P_EVENT, eventsRef.current, next); eventsRef.current = next; setEvents(next); },
+    tasks: (next) => { persistDiff(P_TASK, tasksRef.current, next); tasksRef.current = next; setTasks(next); },
     settings: (next) => { setSettings(next); saveJSON(K_SETTINGS, next); },
   };
 
