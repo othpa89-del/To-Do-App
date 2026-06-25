@@ -124,7 +124,27 @@
   .note{font-size:11.5px;color:var(--muted);margin-top:6px}
   footer{text-align:center;color:var(--muted);font-size:11.5px;padding:24px}
   .pillbar{display:flex;gap:6px;align-items:center}
+  /* Editable cells */
+  .ce{min-height:18px;outline:none;border-radius:6px;padding:2px 4px;min-width:60px}
+  td.tk .ce,td.desc .ce{min-width:200px}
+  .ce:focus{background:#fff;box-shadow:inset 0 0 0 2px var(--ew-magenta-soft)}
+  td:hover .ce{background:#fbfbfd}
+  .cell-input{border:1px solid transparent;background:transparent;font:inherit;color:inherit;padding:3px 5px;border-radius:7px;max-width:100%}
+  .cell-input:focus{outline:none;border-color:var(--ew-magenta);background:#fff;box-shadow:0 0 0 2px var(--ew-magenta-soft)}
+  select.cell-input{cursor:pointer;-webkit-appearance:none;appearance:none;padding-right:18px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M2 3l3 3 3-3' stroke='%23999' fill='none' stroke-width='1.4'/></svg>");
+    background-repeat:no-repeat;background-position:right 5px center}
+  select.cell-input.pill{font-weight:700;border:none}
+  select.cell-input.pill:focus{box-shadow:0 0 0 2px rgba(0,0,0,.12)}
+  select.wsedit{max-width:165px;font-size:11px;font-weight:600;color:var(--ew-magenta-dark);background-color:var(--ew-magenta-soft);border-radius:6px}
+  .cell-date{min-width:120px;font-size:11.5px}
+  .cell-num{width:54px;text-align:center;font-weight:700}
+  .rowact{display:flex;gap:4px}
+  .iconbtn{border:1px solid var(--line);background:#fff;border-radius:6px;cursor:pointer;padding:3px 7px;font-size:12px;line-height:1.3;color:var(--muted)}
+  .iconbtn:hover{background:var(--ew-magenta-soft);border-color:var(--ew-magenta);color:var(--ew-magenta-dark)}
+  .saved{font-size:11.5px;color:var(--green);font-weight:700;transition:opacity .4s}
   @media print{
+    .rowact,td:last-child,th:last-child{display:none!important}
     header{-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .tabs,.toolbar,.tab{display:none!important}
     .panel{display:block!important}
@@ -187,7 +207,10 @@
       <select id="fPrio"><option value="">Alle Prioritäten</option><option>High</option><option>Medium</option><option>Low</option></select>
       <input id="fSearch" placeholder="🔍 Suche Aufgabe / Verantwortlicher…" style="min-width:240px"/>
       <label style="font-size:12.5px;color:var(--muted)"><input type="checkbox" id="fMs"/> nur Milestones</label>
+      <button class="btn" onclick="addRow()">➕ Zeile hinzufügen</button>
+      <span id="savedTag" class="saved" style="opacity:0">✓ gespeichert</span>
       <span style="flex:1"></span>
+      <button class="btn ghost" onclick="resetDemo()" title="Alle Änderungen verwerfen">↺ Demo</button>
       <button class="btn ghost" onclick="exportCSV()">⬇︎ Excel / CSV</button>
       <button class="btn" onclick="window.print()">⬇︎ PDF / Drucken</button>
     </div>
@@ -197,7 +220,7 @@
           <th>Workstream</th><th>Sub-Workstream</th><th>Task-ID</th><th>Aufgabe / Deliverable</th>
           <th>Beschreibung</th><th>Verantwortlicher</th><th>Unterstützende Abt.</th><th>Start</th>
           <th>Due Date</th><th>Dauer (Tage)</th><th>Priorität</th><th>Status</th><th>% Compl.</th>
-          <th>Milestone</th><th>Abhängigkeiten</th><th>Risiken / Issues</th><th>Letztes Update</th><th>Kommentar</th>
+          <th>Milestone</th><th>Abhängigkeiten</th><th>Risiken / Issues</th><th>Letztes Update</th><th>Kommentar</th><th>Aktion</th>
         </tr></thead>
         <tbody id="tbody"></tbody>
       </table>
@@ -369,22 +392,38 @@ const T = [
 
 const WSNAME = Object.fromEntries(WS.map(w=>[w[1],w[0]]));
 const COLS = ["ws","sub","no","task","desc","resp","support","start","due","prio","status","pct","ms","deps","risk","upd","comment"];
-const DATA = T.map(r=>{
-  const o={}; r.forEach((v,i)=>o[COLS[i]]=v);
-  o.tid = o.ws+"-"+String(o.no).padStart(2,"0");
-  o.dur = Math.round((new Date(o.due)-new Date(o.start))/864e5);
-  return o;
-});
 const TODAY = new Date("2026-06-25");
+const KEY = "ew_b737max_pm_v1";
+const STATUSES = ["Not Started","In Progress","Completed","Delayed"];
+const PRIOS = ["High","Medium","Low"];
+
+let DATA = [], UID = 0;
 
 /* ---------- helpers ---------- */
-const de = iso => { const d=new Date(iso); return String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+"."+d.getFullYear(); };
-const statusClass = s => ({"Completed":"s-comp","In Progress":"s-prog","Not Started":"s-not","Delayed":"s-del"}[s]);
-const prioClass = p => ({"High":"p-high","Medium":"p-med","Low":"p-low"}[p]);
-function recomputeDelay(){ // mark overdue not-completed as Delayed for the demo
-  DATA.forEach(d=>{ if(d.status!=="Completed" && new Date(d.due)<TODAY){ d.status="Delayed"; } });
+const pad = n => String(n).padStart(2,"0");
+const days = (s,e) => Math.round((new Date(e)-new Date(s))/864e5);
+const de = iso => { if(!iso) return ""; const d=new Date(iso); return pad(d.getDate())+"."+pad(d.getMonth()+1)+"."+d.getFullYear(); };
+const h = s => String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const statusClass = s => ({"Completed":"s-comp","In Progress":"s-prog","Not Started":"s-not","Delayed":"s-del"}[s]||"s-not");
+const prioClass = p => ({"High":"p-high","Medium":"p-med","Low":"p-low"}[p]||"p-med");
+const opt = (arr,v) => arr.map(o=>`<option ${o===v?"selected":""}>${h(o)}</option>`).join("");
+const wsOpt = v => WS.map(([n,a])=>`<option value="${a}" ${a===v?"selected":""}>${h(n)}</option>`).join("");
+
+/* ---------- data model + persistence ---------- */
+function recompute(){ DATA.forEach(d=>{ d.tid=d.ws+"-"+pad(d.no); d.dur=days(d.start,d.due); }); }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(DATA)); }catch(e){} }
+function seed(){
+  DATA = T.map((r,idx)=>{ const o={}; COLS.forEach((c,i)=>o[c]=r[i]); o.uid=idx; return o; });
+  UID = DATA.length;
+  // initial demo realism: overdue & not completed -> Delayed (only on first seed)
+  DATA.forEach(d=>{ if(d.status!=="Completed" && new Date(d.due)<TODAY) d.status="Delayed"; });
+  recompute();
 }
-recomputeDelay();
+function load(){
+  let s=null; try{ s=localStorage.getItem(KEY); }catch(e){}
+  if(s){ try{ DATA=JSON.parse(s); UID=DATA.reduce((m,d)=>Math.max(m,d.uid),-1)+1; recompute(); return; }catch(e){} }
+  seed(); save();
+}
 
 /* ---------- TABS ---------- */
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
@@ -468,25 +507,26 @@ function currentRows(){
 function renderTable(){
   const rows=currentRows();
   document.getElementById("tbody").innerHTML = rows.map(d=>`
-    <tr class="${d.ms==="Ja"?"msrow":""}">
-      <td><span class="wschip">${WSNAME[d.ws]}</span></td>
-      <td class="nowrap">${d.sub}</td>
+    <tr class="${d.ms==="Ja"?"msrow":""}" data-uid="${d.uid}">
+      <td><select class="cell-input wsedit" data-field="ws">${wsOpt(d.ws)}</select></td>
+      <td><div class="ce" contenteditable data-field="sub">${h(d.sub)}</div></td>
       <td class="tid">${d.tid}</td>
-      <td class="tk">${d.task}</td>
-      <td class="desc">${d.desc}</td>
-      <td class="nowrap">${d.resp}</td>
-      <td>${d.support}</td>
-      <td class="nowrap">${de(d.start)}</td>
-      <td class="nowrap">${de(d.due)}</td>
-      <td style="text-align:center">${d.dur}</td>
-      <td><span class="pill ${prioClass(d.prio)}">${d.prio}</span></td>
-      <td><span class="pill ${statusClass(d.status)}">${d.status}</span></td>
-      <td><div class="pillbar"><div class="mini" style="flex:1"><i style="width:${d.pct}%"></i></div><span style="font-size:11px;font-weight:700">${d.pct}%</span></div></td>
-      <td style="text-align:center">${d.ms==="Ja"?'<span class="ynyes">Ja</span>':'Nein'}</td>
-      <td class="nowrap">${d.deps}</td>
-      <td class="${d.risk!=="-"?"risk":""}">${d.risk}</td>
-      <td class="nowrap">${de(d.upd)}</td>
-      <td>${d.comment}</td>
+      <td class="tk"><div class="ce" contenteditable data-field="task">${h(d.task)}</div></td>
+      <td class="desc"><div class="ce" contenteditable data-field="desc">${h(d.desc)}</div></td>
+      <td><div class="ce" contenteditable data-field="resp">${h(d.resp)}</div></td>
+      <td><div class="ce" contenteditable data-field="support">${h(d.support)}</div></td>
+      <td><input type="date" class="cell-input cell-date" data-field="start" value="${d.start}"></td>
+      <td><input type="date" class="cell-input cell-date" data-field="due" value="${d.due}"></td>
+      <td style="text-align:center" class="durcell">${d.dur}</td>
+      <td><select class="cell-input pill ${prioClass(d.prio)}" data-field="prio">${opt(PRIOS,d.prio)}</select></td>
+      <td><select class="cell-input pill ${statusClass(d.status)}" data-field="status">${opt(STATUSES,d.status)}</select></td>
+      <td><div class="pillbar"><input type="number" min="0" max="100" step="5" class="cell-input cell-num" data-field="pct" value="${d.pct}"><div class="mini" style="flex:1"><i style="width:${d.pct}%"></i></div></div></td>
+      <td style="text-align:center"><select class="cell-input msedit" data-field="ms">${opt(["Ja","Nein"],d.ms)}</select></td>
+      <td><div class="ce" contenteditable data-field="deps">${h(d.deps)}</div></td>
+      <td class="${d.risk&&d.risk!=="-"?"risk":""}"><div class="ce" contenteditable data-field="risk">${h(d.risk)}</div></td>
+      <td><input type="date" class="cell-input cell-date" data-field="upd" value="${d.upd}"></td>
+      <td><div class="ce" contenteditable data-field="comment">${h(d.comment)}</div></td>
+      <td><div class="rowact"><button class="iconbtn" data-act="dup" title="Duplizieren">⧉</button><button class="iconbtn" data-act="del" title="Löschen">✕</button></div></td>
     </tr>`).join("");
   document.getElementById("rowcount").textContent = `${rows.length} von ${DATA.length} Tasks angezeigt`;
 }
@@ -537,6 +577,59 @@ function buildGantt(){
   document.getElementById("gtbl").innerHTML=html;
 }
 
+/* ---------- EDITING, ADD/DELETE, PERSISTENCE ---------- */
+const tbody = document.getElementById("tbody");
+const savedTag = document.getElementById("savedTag");
+let saveTimer, statTimer;
+const saveDebounced = () => { clearTimeout(saveTimer); saveTimer=setTimeout(save,400); };
+const refreshStats = () => { buildDashboard(); buildGantt(); };
+const refreshStatsDebounced = () => { clearTimeout(statTimer); statTimer=setTimeout(refreshStats,250); };
+function markSaved(){ if(!savedTag) return; savedTag.textContent="✓ gespeichert"; savedTag.style.opacity=1;
+  clearTimeout(markSaved._t); markSaved._t=setTimeout(()=>savedTag.style.opacity=0,1400); }
+const byUid = u => DATA.find(x=>String(x.uid)===String(u));
+const nextNo = ws => { const ns=DATA.filter(x=>x.ws===ws).map(x=>x.no); return ns.length?Math.max(...ns)+1:1; };
+
+// Free-text fields: update live, persist, no re-render (keeps caret) — they don't affect stats
+tbody.addEventListener("input", e=>{
+  const el=e.target, tr=el.closest("tr"); if(!tr) return; const d=byUid(tr.dataset.uid); if(!d) return;
+  if(el.dataset.field && el.isContentEditable){ d[el.dataset.field]=el.textContent; markSaved(); saveDebounced(); }
+  else if(el.dataset.field==="pct"){ const v=Math.max(0,Math.min(100,parseInt(el.value,10)||0)); d.pct=v;
+    const b=tr.querySelector(".mini i"); if(b) b.style.width=v+"%"; markSaved(); saveDebounced(); refreshStatsDebounced(); }
+});
+// Selects / dates: update model, recompute, persist, re-render + refresh stats
+tbody.addEventListener("change", e=>{
+  const el=e.target, tr=el.closest("tr"); if(!tr) return; const d=byUid(tr.dataset.uid); if(!d) return;
+  const f=el.dataset.field; if(!f) return;
+  if(f==="ws"){ if(el.value!==d.ws){ d.ws=el.value; d.no=nextNo(d.ws); } }
+  else if(f==="pct"){ d.pct=Math.max(0,Math.min(100,parseInt(el.value,10)||0)); }
+  else { d[f]=el.value; }
+  recompute(); save(); renderTable(); refreshStats(); markSaved();
+});
+// Row actions: duplicate / delete
+tbody.addEventListener("click", e=>{
+  const b=e.target.closest("[data-act]"); if(!b) return; const tr=b.closest("tr"); const d=byUid(tr.dataset.uid); if(!d) return;
+  if(b.dataset.act==="del" && confirm("Aufgabe löschen?\n\n"+d.tid+" – "+d.task)){
+    DATA=DATA.filter(x=>x.uid!==d.uid); save(); renderTable(); refreshStats(); markSaved(); }
+  if(b.dataset.act==="dup"){
+    const c=JSON.parse(JSON.stringify(d)); c.uid=UID++; c.no=nextNo(c.ws);
+    c.task=d.task+" (Kopie)"; c.status="Not Started"; c.pct=0; c.ms="Nein";
+    DATA.push(c); recompute(); save(); renderTable(); refreshStats(); markSaved(); }
+});
+
+function addRow(){
+  const ws=fWs.value||WS[0][1], t="2026-06-25";
+  DATA.push({uid:UID++,ws,sub:"–",no:nextNo(ws),task:"Neue Aufgabe",desc:"",resp:"",support:"",
+    start:t,due:t,prio:"Medium",status:"Not Started",pct:0,ms:"Nein",deps:"-",risk:"-",upd:t,comment:""});
+  recompute(); save(); renderTable(); refreshStats(); markSaved();
+  const w=document.querySelector(".tablewrap"); if(w) w.scrollTop=w.scrollHeight;
+}
+function resetDemo(){
+  if(confirm("Alle Änderungen verwerfen und die Demo-Daten wiederherstellen?")){
+    try{ localStorage.removeItem(KEY); }catch(e){} seed(); save(); renderTable(); refreshStats(); markSaved(); }
+}
+
+/* ---------- INIT ---------- */
+load();
 buildDashboard(); renderTable(); buildGantt();
 </script>
 </body>
