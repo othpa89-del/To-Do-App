@@ -24,7 +24,7 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const fmtDay = (d) => (d ? new Date(d + "T00:00:00").toLocaleDateString("de-DE") : "");
 
-async function loadMeetings() {
+export async function loadMeetings() {
   try { const r = await window.storage.get("meetings", true); return r && r.value ? JSON.parse(r.value) : []; }
   catch { return []; }
 }
@@ -524,15 +524,7 @@ function MeetingEditor({ meeting, persons, categories, profile, types = MEETING_
         </div>
       </Section>
 
-      {/* Export */}
-      <Section title="Export & Druck">
-        <div className="mm-attbar">
-          <button className="mm-btn out" onClick={() => printMeeting(m)}><Printer size={14} /> Drucken / PDF</button>
-          <button className="mm-btn out" onClick={() => exportWord(m)}><FileText size={14} /> Word</button>
-          <button className="mm-btn out" onClick={() => downloadFile(meetingToMarkdown(m), `Protokoll_${(m.title || "Meeting").replace(/\s+/g, "_")}.md`, "text/markdown")}><Download size={14} /> Markdown</button>
-          <button className="mm-btn out" onClick={() => downloadFile(meetingToText(m), `Protokoll_${(m.title || "Meeting").replace(/\s+/g, "_")}.txt`, "text/plain")}><Download size={14} /> TXT</button>
-        </div>
-      </Section>
+      <p className="mm-hint">Export & Druck (PDF, Word, Markdown, TXT) findest du gesammelt im Tab „Druck & Export" – nach dem Speichern.</p>
 
       <div className="mm-ebottom">
         <button className="mm-btn ghost" onClick={onCancel}>Abbrechen</button>
@@ -621,7 +613,7 @@ function meetingMetaRows(m) {
     ["Organisator", m.organizer], ["Protokollführer", m.recorder],
   ].filter((r) => r[1]);
 }
-function meetingToMarkdown(m) {
+export function meetingToMarkdown(m) {
   const L = [];
   L.push(`# Besprechungsprotokoll – ${m.title || ""}`.trim(), "");
   meetingMetaRows(m).forEach(([k, v]) => L.push(`**${k}:** ${v}`));
@@ -645,7 +637,7 @@ function meetingToMarkdown(m) {
   if (m.nextMeeting && (m.nextMeeting.date || m.nextMeeting.note)) L.push(`## Nächstes Meeting`, `${fmtDay(m.nextMeeting.date)} ${m.nextMeeting.note || ""}`.trim(), "");
   return L.join("\n");
 }
-function meetingToText(m) { return meetingToMarkdown(m).replace(/[#*>`]/g, "").replace(/\n{3,}/g, "\n\n").trim(); }
+export function meetingToText(m) { return meetingToMarkdown(m).replace(/[#*>`]/g, "").replace(/\n{3,}/g, "\n\n").trim(); }
 
 function meetingHTML(m, forWord) {
   const esc = (s) => (s == null ? "" : String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"));
@@ -701,14 +693,14 @@ function meetingHTML(m, forWord) {
     <div class="sign"><div>Organisator${m.organizer ? " – " + esc(m.organizer) : ""}</div><div>Protokollführer${m.recorder ? " – " + esc(m.recorder) : ""}</div></div>
     </body></html>`;
 }
-function printMeeting(m) {
+export function printMeeting(m) {
   const w = window.open("", "_blank");
   if (!w) { alert("Bitte Pop-ups erlauben, um zu drucken."); return; }
   w.document.write(meetingHTML(m));
   w.document.close(); w.focus();
   setTimeout(() => { try { w.print(); } catch {} }, 400);
 }
-function exportWord(m) {
+export function exportWord(m) {
   const html = meetingHTML(m, true);
   downloadFile("﻿" + html, `Protokoll_${(m.title || "Meeting").replace(/\s+/g, "_")}.doc`, "application/msword");
 }

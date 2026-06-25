@@ -3,9 +3,9 @@ import * as XLSX from "xlsx";
 import {
   User, Building2, Printer, FileSpreadsheet, Check, Pencil, X, Square, CheckSquare,
   Bell, Settings, Search, ExternalLink, Repeat, Download, Upload, Database, Plus, Mail, Phone,
-  MessageSquare, ChevronUp, ChevronDown, Plane,
+  MessageSquare, ChevronUp, ChevronDown, Plane, FileText,
 } from "lucide-react";
-import Meetings from "./Meetings.jsx";
+import Meetings, { loadMeetings, meetingToMarkdown, meetingToText, exportWord, printMeeting } from "./Meetings.jsx";
 
 // --- Markenfarben (Farbchapter) ---
 const C = {
@@ -128,6 +128,7 @@ export default function App() {
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
   const [companies, setCompanies] = useState(DEFAULT_COMPANIES);
   const [persons, setPersons] = useState([]);
+  const [meetings, setMeetings] = useState([]); // nur für den Export-Tab (read-only)
   const [loaded, setLoaded] = useState(false);
   const [remoteTick, setRemoteTick] = useState(0);
   const [view, setView] = useState("all");
@@ -201,6 +202,7 @@ export default function App() {
       if (on) setCompanies(comps);
       try { const r = await window.storage.get("persons", true); if (on && r && r.value) setPersons(JSON.parse(r.value)); } catch {}
       try { const pr = await window.storage.get("profile", false); if (pr && pr.value && on) setProfile(JSON.parse(pr.value)); } catch {}
+      try { const mm = await loadMeetings(); if (on) setMeetings(mm); } catch {}
       if (on) setLoaded(true);
     })();
     return () => { on = false; };
@@ -730,10 +732,6 @@ export default function App() {
                     {sortedCats.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
-                <div className="tb-export">
-                  <button className="btn out" onClick={() => doPrintPersons(personsView)}><Printer size={15} /> Drucken / PDF</button>
-                  <button className="btn out" onClick={() => doExcelPersons(personsView)}><FileSpreadsheet size={15} /> Excel</button>
-                </div>
               </div>
               {persons.length === 0 && <div className="empty">Noch keine Ansprechpersonen. Links die erste anlegen.</div>}
               {persons.length > 0 && personsView.length === 0 && <div className="empty">Keine Treffer.</div>}
@@ -826,6 +824,39 @@ export default function App() {
                       </li>
                     );
                   })}
+                </ul>
+              )}
+            </div>
+
+            <div className="card">
+              <h2>Personen exportieren</h2>
+              <p className="hint">Alle Ansprechpersonen als PDF/Druck oder Excel.</p>
+              <div className="data-row">
+                <button className="btn out" onClick={() => doPrintPersons(persons)} disabled={!persons.length}><Printer size={15} /> Drucken / PDF</button>
+                <button className="btn out" onClick={() => doExcelPersons(persons)} disabled={!persons.length}><FileSpreadsheet size={15} /> Excel</button>
+              </div>
+              {persons.length === 0 && <div className="empty">Noch keine Personen angelegt.</div>}
+            </div>
+
+            <div className="card">
+              <h2>Meeting-Protokolle exportieren</h2>
+              <p className="hint">Pro Meeting als PDF/Druck, Word, Markdown oder TXT. Anlegen/Bearbeiten im Tab „Meeting Minutes".</p>
+              {meetings.length === 0 ? <div className="empty">Noch keine Meetings angelegt.</div> : (
+                <ul className="mexp-list">
+                  {meetings.slice().sort((a, b) => (b.date || "").localeCompare(a.date || "")).map((mt) => (
+                    <li key={mt.id} className="mexp-row">
+                      <div className="mexp-info">
+                        <span className="mexp-title">{mt.title || "(ohne Titel)"}</span>
+                        <span className="mexp-meta">{fmtDay(mt.date)}{mt.type ? " · " + mt.type : ""}{mt.status ? " · " + mt.status : ""}</span>
+                      </div>
+                      <div className="mexp-actions">
+                        <button className="btn out" onClick={() => printMeeting(mt)}><Printer size={14} /> PDF</button>
+                        <button className="btn out" onClick={() => exportWord(mt)}><FileText size={14} /> Word</button>
+                        <button className="btn out" onClick={() => downloadBlob(meetingToMarkdown(mt), `Protokoll_${(mt.title || "Meeting").replace(/\s+/g, "_")}.md`, "text/markdown")}>MD</button>
+                        <button className="btn out" onClick={() => downloadBlob(meetingToText(mt), `Protokoll_${(mt.title || "Meeting").replace(/\s+/g, "_")}.txt`, "text/plain")}>TXT</button>
+                      </div>
+                    </li>
+                  ))}
                 </ul>
               )}
             </div>
@@ -1314,6 +1345,13 @@ aside.panel .card{position:sticky;top:16px;}
 .chip:hover{border-color:${C.sky};}
 .chip.on{color:${C.white};}
 
+.mexp-list{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:7px;}
+.mexp-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid ${C.line};border-radius:9px;padding:9px 12px;}
+.mexp-info{flex:1;min-width:150px;}
+.mexp-title{display:block;font-weight:800;color:${C.ink};font-size:14px;}
+.mexp-meta{font-size:12px;color:${C.cool};}
+.mexp-actions{display:flex;gap:6px;flex-wrap:wrap;}
+.mexp-actions .btn.out{padding:6px 10px;font-size:12px;}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:80;background:${C.ink};color:${C.white};font-size:14px;font-weight:600;padding:11px 18px;border-radius:9px;box-shadow:0 6px 24px rgba(0,0,0,.22);}
 .modal-bg{position:fixed;inset:0;background:rgba(33,37,41,.45);z-index:70;display:flex;align-items:center;justify-content:center;padding:20px;}
 .modal{background:${C.white};border-radius:14px;width:100%;max-width:480px;max-height:86vh;overflow:auto;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
