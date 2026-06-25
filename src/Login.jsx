@@ -116,12 +116,14 @@ export default function Login({ supabase, recovery = false, onDone, notice = "" 
           </button>
         )}
       </div>
+      <div style={S.copyright}>Copyright by Patrick Thorn</div>
     </div>
   );
 }
 
 const S = {
-  wrap: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#F8F9FA", fontFamily: "Mulish, system-ui, sans-serif", padding: 20 },
+  wrap: { minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#F8F9FA", fontFamily: "Mulish, system-ui, sans-serif", padding: 20 },
+  copyright: { marginTop: 16, fontSize: 11, color: "#9aa0a6", opacity: 0.8 },
   card: { width: "100%", maxWidth: 360, background: "#fff", border: "1px solid #D7D7D7", borderRadius: 14, padding: 28, boxShadow: "0 8px 30px rgba(0,0,0,.06)", display: "flex", flexDirection: "column", gap: 12 },
   brandRow: { display: "flex", alignItems: "center", gap: 10 },
   brand: { fontSize: 30, fontWeight: 900, color: "#AF1E65", letterSpacing: "-0.02em" },

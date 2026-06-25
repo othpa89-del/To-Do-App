@@ -1020,6 +1020,7 @@ export default function App() {
           </div>
         )}
         {toast && <div className="toast">{toast}</div>}
+        <footer className="app-foot">Copyright by Patrick Thorn</footer>
       </div>
 
       {/* Bereiche verwalten */}
@@ -1118,7 +1119,7 @@ function PrintDoc({ items }) {
           ))}
         </tbody>
       </table>
-      <div className="p-foot">Zur internen Verwendung</div>
+      <div className="p-foot">Zur internen Verwendung · Copyright by Patrick Thorn</div>
     </div>
   );
 }
@@ -1148,7 +1149,7 @@ function PersonsPrintDoc({ items, openCount }) {
           ))}
         </tbody>
       </table>
-      <div className="p-foot">Zur internen Verwendung</div>
+      <div className="p-foot">Zur internen Verwendung · Copyright by Patrick Thorn</div>
     </div>
   );
 }
@@ -1326,6 +1327,7 @@ aside.panel .card{position:sticky;top:16px;}
 .mexp-meta{font-size:12px;color:${C.cool};}
 .mexp-actions{display:flex;gap:6px;flex-wrap:wrap;}
 .mexp-actions .btn.out{padding:6px 10px;font-size:12px;}
+.app-foot{text-align:center;font-size:11px;color:${C.cool};opacity:.75;padding:20px 12px calc(24px + env(safe-area-inset-bottom));}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:80;background:${C.ink};color:${C.white};font-size:14px;font-weight:600;padding:11px 18px;border-radius:9px;box-shadow:0 6px 24px rgba(0,0,0,.22);}
 .modal-bg{position:fixed;inset:0;background:rgba(33,37,41,.45);z-index:70;display:flex;align-items:center;justify-content:center;padding:20px;}
 .modal{background:${C.white};border-radius:14px;width:100%;max-width:480px;max-height:86vh;overflow:auto;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3);}

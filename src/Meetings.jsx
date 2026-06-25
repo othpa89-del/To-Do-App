@@ -635,6 +635,7 @@ export function meetingToMarkdown(m) {
   if ((m.actionItems || []).length) { L.push("## Aufgaben"); m.actionItems.forEach((a) => L.push(`- [ ] ${a.text}`)); L.push(""); }
   if (m.openPoints) { L.push("## Offene Punkte", m.openPoints, ""); }
   if (m.nextMeeting && (m.nextMeeting.date || m.nextMeeting.note)) L.push(`## Nächstes Meeting`, `${fmtDay(m.nextMeeting.date)} ${m.nextMeeting.note || ""}`.trim(), "");
+  L.push("", "Copyright by Patrick Thorn");
   return L.join("\n");
 }
 export function meetingToText(m) { return meetingToMarkdown(m).replace(/[#*>`]/g, "").replace(/\n{3,}/g, "\n\n").trim(); }
@@ -674,6 +675,7 @@ function meetingHTML(m, forWord) {
     .mm-tbl td{border:1px solid #cbd5e1;}
     .ph{max-width:46%;margin:6px 6px 0 0;border:1px solid #e5e7eb;border-radius:6px;vertical-align:top;}
     .sign{display:flex;gap:40px;margin-top:36px;} .sign div{flex:1;border-top:1px solid #9ca3af;padding-top:5px;font-size:11px;color:#6b7280;text-align:center;}
+    .cpr{margin-top:22px;text-align:center;font-size:9px;color:#9ca3af;}
     @media print{@page{margin:14mm;}}
   `;
   const planeSvg = `<svg class="logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>`;
@@ -691,6 +693,7 @@ function meetingHTML(m, forWord) {
     ${(m.nextMeeting && (m.nextMeeting.date || m.nextMeeting.note)) ? `<h2>Nächstes Meeting</h2><p>${esc(fmtDay(m.nextMeeting.date))} ${esc(m.nextMeeting.note)}</p>` : ""}
     ${imgs ? `<h2>Bilder</h2>${imgs}` : ""}
     <div class="sign"><div>Organisator${m.organizer ? " – " + esc(m.organizer) : ""}</div><div>Protokollführer${m.recorder ? " – " + esc(m.recorder) : ""}</div></div>
+    <div class="cpr">Copyright by Patrick Thorn</div>
     </body></html>`;
 }
 export function printMeeting(m) {
