@@ -943,7 +943,7 @@ export default function App() {
                     <option value="all">Alle</option><option value="__none__">Ohne</option>
                     {sortedCompanies.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select></div>
-                <div className="tb-group"><span>Ansprechperson</span>
+                <div className="tb-group"><span>Person</span>
                   <select value={filterContact} onChange={(e) => setFilterContact(e.target.value)}>
                     <option value="all">Alle</option><option value="__none__">Ohne</option>
                     {contactFilterOptions.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -1192,15 +1192,15 @@ aside.panel .card{position:sticky;top:16px;}
 .filelbl{cursor:pointer;}
 .hint{margin:11px 0 0;font-size:12px;color:${C.cool};line-height:1.4;}
 
-.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;background:${C.white};border:1px solid ${C.line};border-radius:10px;padding:11px 14px;margin-bottom:12px;}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:${C.white};border:1px solid ${C.line};border-radius:10px;padding:8px 10px;margin-bottom:12px;}
 .search{display:flex;align-items:center;gap:7px;border:1px solid ${C.line};border-radius:8px;padding:0 10px;min-width:170px;flex:1;max-width:280px;color:${C.cool};}
 .search-bottom{margin-top:18px;padding-top:14px;border-top:1px solid ${C.fill};display:flex;justify-content:center;}
 .search-bottom .search{max-width:420px;width:100%;flex:none;}
 .search input{border:none;padding:8px 0;box-shadow:none !important;}
 .search .clear{background:none;border:none;color:${C.cool};cursor:pointer;display:flex;}
-.tb-group{display:flex;align-items:center;gap:7px;}
-.tb-group span{font-size:12px;font-weight:700;color:${C.grey};}
-.tb-group select{width:auto;padding:6px 8px;font-size:13px;}
+.tb-group{display:flex;align-items:center;gap:5px;}
+.tb-group span{font-size:10px;font-weight:800;color:${C.cool};text-transform:uppercase;letter-spacing:.04em;}
+.tb-group select{width:auto;padding:5px 7px;font-size:12px;}
 .tb-export{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto;}
 .link{display:inline-flex;align-items:center;gap:6px;background:none;border:none;font-family:inherit;font-size:13px;font-weight:700;color:${C.sky};cursor:pointer;padding:6px 4px;}
 .link:hover{color:${C.burgundy};}
