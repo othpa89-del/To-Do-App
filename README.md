@@ -1,104 +1,140 @@
-# TO DO APP
+# Eurowings · Training / Project Management Cockpit
 
-Aufgaben-App mit **Echtzeit-Synchronisation** über Supabase.
-Dieselben Daten auf iPhone, iPad und Laptops – live und gleichzeitig.
-Läuft als installierbare Web-App (PWA).
+This repository contains two apps:
 
-## 🚀 Live & Projekt-Infos
+1. **PM Cockpit** — `mockup.html` — a self-contained, single-file project‑management
+   tool (the app this project currently focuses on).
+2. **TO DO App** — a React + Vite + Supabase PWA under `src/` (real‑time synced task app).
+
+---
+
+## 1) PM Cockpit (`mockup.html`)
+
+A professional, **multi‑project** project‑management cockpit in Eurowings branding.
+Originally built for the Boeing 737 MAX training programme, it is now a **general
+multi‑project tool** that works for any kind of project.
+
+> **No build, no server, no install.** Just open `mockup.html` in any modern browser
+> (desktop laptop or iPad). Everything runs locally; the interface is in English.
+
+### Features
+
+- **Portfolio home page** — every project as a status card (RAG health, progress ring,
+  open / critical / milestone / task counts, status mini‑bar, target date) plus
+  portfolio‑level KPIs. Create / rename / delete projects.
+- **Per‑project workspace** — independent **Dashboard**, **Tasks** table and **Gantt**
+  timeline for each project.
+- **Master task list** — 18 columns (Workstream, Sub‑Workstream, Task‑ID, Task/Deliverable,
+  Description, Owner, Supporting depts, Start, Due, Duration, Priority, Status,
+  % Completion, Milestone, Dependencies, Risks/Issues, Last update, Comment).
+  Every row is **editable inline**; add / duplicate / delete rows.
+- **Live statistics** — KPIs, RAG overview, per‑workstream progress and overall progress
+  recompute on every edit.
+- **Status automation** — overdue, non‑completed tasks flip to **Delayed** automatically
+  (and back when the due date moves forward); *Last update* is stamped automatically.
+- **Critical path** — binding dependency chain to the latest milestone, highlighted in the
+  table (flag + filter), on the dashboard, and in the Gantt (red bars + **dependency arrows**).
+- **Milestone tracking** — programme milestones with status and dates.
+- **One‑page status reports** — branded **project** and **portfolio** reports, print‑ready.
+- **Custom workstreams per project** — add / rename / re‑code / remove workstreams;
+  renaming a code remaps that project's task IDs. Defaults to a standard list.
+- **Import existing Excel/CSV lists** — `.xlsx` / `.csv` reader with a **column‑mapping**
+  dialog (auto‑maps German *and* English headers), value normalisation
+  (status / priority / %, dates), into a new or existing project.
+- **Export** — native multi‑sheet **`.xlsx`** (one sheet per project + a portfolio summary),
+  per‑project `.xlsx` / CSV, and **branded PDF** for every page (print → save as PDF).
+- **Backup & restore** — export/import the whole portfolio as a **JSON** file. This is the
+  way to move data between devices (laptop ↔ iPad).
+- **Responsive** for 15"/17" laptops and iPad (landscape & portrait), with touch scrolling.
+
+### Data & persistence
+
+Data is stored **locally in the browser** (`localStorage`) — it is **not** synced
+automatically between devices or browsers. Use **Backup (JSON)** / **Restore** to transfer
+a portfolio. The seed data (three demo training programmes) is sample content; use
+**↺ Demo** to reset, or just delete/replace it.
+
+### Quick start
+
+1. Open `mockup.html` (double‑click, or serve the repo and browse to it).
+2. On the **Portfolio** page, open a project or create a new one.
+3. Edit tasks in the **Tasks** view; watch the Dashboard / Gantt update live.
+4. Generate a **Report**, **Export** to Excel/PDF, or **Import** an existing Excel list.
+
+---
+
+## 2) TO DO App (React + Vite + Supabase PWA)
+
+A task app with **real‑time sync** via Supabase — the same data on iPhone, iPad and
+laptops, live and simultaneously. Runs as an installable web app (PWA).
 
 | | |
 |---|---|
-| **Live-App** | https://othpa89-del.github.io/TO-DO-App/ |
-| **GitHub-Repo** | https://github.com/othpa89-del/To-Do-App (Branch `main`) |
-| **Deployment** | GitHub Actions → GitHub Pages (automatisch bei jedem Push auf `main`) |
-| **Supabase-URL** | `https://jgrupdbfsxinahflzogr.supabase.co` |
-| **Supabase Projekt-ID** | `jgrupdbfsxinahflzogr` |
-| **Schlüssel** | `SUPABASE_URL` & `SUPABASE_ANON_KEY` in `src/config.js` (anon-Key darf öffentlich sein) |
+| **Live app** | https://othpa89-del.github.io/TO-DO-App/ |
+| **GitHub repo** | https://github.com/othpa89-del/To-Do-App (branch `main`) |
+| **Deployment** | GitHub Actions → GitHub Pages (automatic on every push to `main`) |
+| **Supabase URL** | `https://jgrupdbfsxinahflzogr.supabase.co` |
+| **Supabase project ID** | `jgrupdbfsxinahflzogr` |
+| **Keys** | `SUPABASE_URL` & `SUPABASE_ANON_KEY` in `src/config.js` (the anon key may be public) |
 
-### Tech-Stack
+### Tech stack
 - **Frontend:** React 18 + Vite 5
-- **PWA:** `vite-plugin-pwa` (installierbar, Offline-Shell, Auto-Update)
-- **Backend/Daten:** Supabase (Postgres-Tabelle `kv`) mit Row-Level-Security je `user_id`
-- **Echtzeit:** Supabase Realtime
-- **Icons / Export:** `lucide-react`, `xlsx`
+- **PWA:** `vite-plugin-pwa` (installable, offline shell, auto‑update)
+- **Backend/data:** Supabase (Postgres table `kv`) with Row‑Level Security per `user_id`
+- **Real‑time:** Supabase Realtime
+- **Icons / export:** `lucide-react`, `xlsx`
 
-### Lokale Entwicklung
+### Local development
 ```bash
-npm install      # Abhängigkeiten installieren
-npm run dev      # Dev-Server (http://localhost:5173)
-npm run build    # Produktions-Build nach dist/
-npm run preview  # Build lokal testen
+npm install      # install dependencies
+npm run dev      # dev server (http://localhost:5173)
+npm run build    # production build to dist/
+npm run preview  # test the build locally
 ```
 
-### Projektstruktur
+### Project structure
 ```
-src/            App.jsx · main.jsx · Login.jsx · config.js
+mockup.html                    Standalone PM Cockpit (app #1)
+src/            App.jsx · main.jsx · Login.jsx · config.js   (app #2)
 public/         Icons (favicon, icon-192/512, apple-touch-icon)
-.github/workflows/deploy.yml   GitHub-Pages-Deploy
+.github/workflows/deploy.yml   GitHub Pages deploy
 index.html · vite.config.js · package.json
-supabase-setup.sql             Datenbank-Setup (einmalig im SQL-Editor)
+supabase-setup.sql             Database setup (run once in the SQL editor)
 ```
 
-## Einrichtung – Teil 1: Supabase (einmalig, ~10 Min, kostenlos)
+### Setup – Part 1: Supabase (once, ~10 min, free)
+1. Sign up at **supabase.com** → **New project** (free tier, region e.g. *Central EU (Frankfurt)*).
+2. **Prepare the database:** **SQL Editor** → paste the contents of `supabase-setup.sql` → **RUN**.
+3. **Simplify sign‑in (optional):** **Authentication → Providers → Email** → turn off
+   *Confirm email* so sign‑in works without a confirmation mail.
+4. **Get the keys:** **Project Settings → API** → **Project URL** (`SUPABASE_URL`) and
+   **anon public** (`SUPABASE_ANON_KEY`).
 
-1. Auf **supabase.com** kostenlos registrieren → **New project** anlegen
-   (Projektname frei, Region z. B. „Central EU (Frankfurt)", DB-Passwort vergeben).
-2. **Datenbank vorbereiten:** linkes Menü → **SQL Editor** → Inhalt der Datei
-   `supabase-setup.sql` einfügen → **RUN**.
-3. **Anmeldung vereinfachen (optional, empfohlen):** **Authentication → Providers →
-   Email** → „**Confirm email**" ausschalten. Dann funktioniert die Anmeldung
-   sofort ohne Bestätigungs-E-Mail.
-4. **Schlüssel holen:** **Project Settings → API**:
-   - **Project URL**  → später als `SUPABASE_URL`
-   - **anon public**  → später als `SUPABASE_ANON_KEY`
-
-## Einrichtung – Teil 2: Schlüssel eintragen
-
-Datei **`src/config.js`** öffnen und die zwei Platzhalter ersetzen:
-
+### Setup – Part 2: enter the keys
+Open **`src/config.js`** and replace the two placeholders:
 ```js
-export const SUPABASE_URL = "https://deinprojekt.supabase.co";
+export const SUPABASE_URL = "https://yourproject.supabase.co";
 export const SUPABASE_ANON_KEY = "eyJhbGciOi...";
 ```
+(The anon key may be visible in the browser — data is protected by sign‑in + database
+access rules.)
 
-(Der anon-Key darf im Browser sichtbar sein – die Daten sind durch Anmeldung +
-Zugriffsregeln in der Datenbank geschützt.)
+### Setup – Part 3: publish on GitHub
+1. Push all project files to the repo (contents in the root, branch **main**).
+2. Make the repo **public** (free GitHub Pages) → **Settings → Pages → Source: "GitHub Actions"**.
+3. The workflow builds automatically (**Actions** tab); then live at
+   `https://<username>.github.io/<repo-name>/`.
 
-## Einrichtung – Teil 3: Auf GitHub veröffentlichen
+### Usage
+1. Open the page → **Create account** (email + password), then **sign in**.
+2. Use the **same account on every device** → the same data everywhere, live.
+3. Install: **iPhone/iPad (Safari):** Share → *Add to Home Screen*;
+   **Laptop (Chrome/Edge):** install icon in the address bar.
 
-1. Alle Dateien dieses Projekts ins Repo laden (Inhalte direkt ins Hauptverzeichnis,
-   Branch **main**).
-2. Repo **öffentlich** stellen (kostenlose GitHub Pages) → **Settings → Pages →
-   Source: „GitHub Actions"**.
-3. Der Workflow baut automatisch (Reiter **Actions**). Danach live unter
-   `https://<benutzername>.github.io/<repo-name>/`.
+### Sync
+Data syncs per **account** across all your devices (live via Supabase Realtime). Use the
+same account on every device to see the same tasks everywhere.
 
-> ✅ Für dieses Repo bereits eingerichtet – live unter
-> https://othpa89-del.github.io/TO-DO-App/
-
-## Nutzung
-
-1. Seite öffnen → **Konto erstellen** (E-Mail + Passwort), dann **anmelden**.
-2. Auf **jedem Gerät dasselbe Konto** verwenden → überall dieselben Daten, live.
-3. Installieren:
-   - **iPhone/iPad (Safari):** Teilen → „Zum Home-Bildschirm".
-   - **Laptop (Chrome/Edge):** Installations-Symbol in der Adressleiste.
-4. **Abmelden:** Button unten rechts.
-
-## Synchronisation
-
-Die Daten synchronisieren pro **Konto** über alle deine Geräte (live via Supabase
-Realtime). Auf jedem Gerät dasselbe Konto verwenden → überall dieselben Aufgaben.
-
-## Hinweise
-
-- **Online-Betrieb:** Lesen/Schreiben benötigt Internet. Eine Sicherung über
-  „Druck & Export → JSON-Backup" ist trotzdem empfehlenswert.
-- Bei Fehlern im **Actions**-Lauf: Log-Meldung schicken, dann wird's korrigiert.
-
-## Technisches
-
-- React + Vite, PWA via `vite-plugin-pwa`.
-- Daten: Supabase (Postgres) Tabelle `kv`, Zugriff per Row Level Security je `user_id`.
-- Live-Updates via Supabase Realtime → `src/main.jsx` verteilt Änderungen an die App.
-- Deployment: GitHub Actions → GitHub Pages (`base` wird automatisch gesetzt).
+### Notes
+- **Online operation:** reading/writing needs internet.
+- Deployment: GitHub Actions → GitHub Pages (`base` is set automatically).
