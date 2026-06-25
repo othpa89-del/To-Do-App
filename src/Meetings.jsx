@@ -635,7 +635,7 @@ export function meetingToMarkdown(m) {
   if ((m.actionItems || []).length) { L.push("## Aufgaben"); m.actionItems.forEach((a) => L.push(`- [ ] ${a.text}`)); L.push(""); }
   if (m.openPoints) { L.push("## Offene Punkte", m.openPoints, ""); }
   if (m.nextMeeting && (m.nextMeeting.date || m.nextMeeting.note)) L.push(`## Nächstes Meeting`, `${fmtDay(m.nextMeeting.date)} ${m.nextMeeting.note || ""}`.trim(), "");
-  L.push("", "Copyright by Patrick Thorn");
+  L.push("", "© Copyright by Patrick Thorn");
   return L.join("\n");
 }
 export function meetingToText(m) { return meetingToMarkdown(m).replace(/[#*>`]/g, "").replace(/\n{3,}/g, "\n\n").trim(); }
@@ -693,7 +693,7 @@ function meetingHTML(m, forWord) {
     ${(m.nextMeeting && (m.nextMeeting.date || m.nextMeeting.note)) ? `<h2>Nächstes Meeting</h2><p>${esc(fmtDay(m.nextMeeting.date))} ${esc(m.nextMeeting.note)}</p>` : ""}
     ${imgs ? `<h2>Bilder</h2>${imgs}` : ""}
     <div class="sign"><div>Organisator${m.organizer ? " – " + esc(m.organizer) : ""}</div><div>Protokollführer${m.recorder ? " – " + esc(m.recorder) : ""}</div></div>
-    <div class="cpr">Copyright by Patrick Thorn</div>
+    <div class="cpr">© Copyright by Patrick Thorn</div>
     </body></html>`;
 }
 export function printMeeting(m) {
