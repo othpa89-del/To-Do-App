@@ -227,6 +227,13 @@
   .todo-task.compact{padding:7px 14px;margin-bottom:7px}
   .todo-task.compact .todo-task-head{margin-bottom:0}
   .iconbtn[data-act=expand]{font-weight:600;color:var(--ew-magenta-dark)}
+  .todo-task.flash{animation:tdflash 1.6s ease}
+  @keyframes tdflash{0%,40%{box-shadow:0 0 0 3px var(--ew-magenta);background:var(--ew-magenta-soft)}100%{box-shadow:var(--shadow);background:#fff}}
+  /* Gantt task rows are clickable -> open to-dos */
+  .gtable tr.gtask{cursor:pointer}
+  .gtable tr.gtask:hover td.gname{background:var(--ew-magenta-soft)}
+  .gtable tr.gtask td.gname::after{content:"✅";opacity:0;margin-left:6px;font-size:10px}
+  .gtable tr.gtask:hover td.gname::after{opacity:.7}
   .todo-task-head{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
   .todo-task-head .tid{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;color:var(--ew-magenta-dark);font-size:12px}
   .todo-task-head .tt{font-weight:600;flex:1;min-width:140px}
@@ -1538,7 +1545,7 @@ function buildGantt(){
       const bar = d.ms==="Yes"
         ? `<div class="gdiamond ${cr}" data-tid="${normId(d.tid)}" style="left:${left+width/2}%" title="${d.task} – ${de(d.due)}"></div>`
         : `<div class="gbar ${cls} ${cr}" data-tid="${normId(d.tid)}" style="left:${left}%;width:${width}%" title="${d.task}\n${de(d.start)} → ${de(d.due)} (${d.pct}%)"></div>`;
-      html+=`<tr><td class="gname" style="font-weight:500;font-size:11px">${cr?'<span class="critflag">⚠</span>':''}${d.tid} · ${d.task}</td>
+      html+=`<tr class="gtask" data-uid="${d.uid}" title="Open to-dos →"><td class="gname" style="font-weight:500;font-size:11px">${cr?'<span class="critflag">⚠</span>':''}${d.tid} · ${d.task}</td>
         <td class="gcell" colspan="${months.length}" style="position:relative">
           <div class="today" style="left:${todayPct}%"></div>${bar}</td></tr>`;
     });
@@ -1627,8 +1634,23 @@ function tdRerender(focusUid){ const y=window.scrollY; buildTodos(); window.scro
 function tdAdd(inp){ const card=inp.closest(".todo-task"), d=tdTask(card), text=inp.value.trim(); if(!d||!text) return;
   if(!Array.isArray(d.todos)) d.todos=[]; d.todos.push({id:"td"+Date.now()+Math.floor(Math.random()*1e4),text,done:false});
   save(); markSaved(); tdRerender(d.uid); }
+// Jump from a Gantt task to its to-do checklist
+function openTaskTodos(uid){
+  document.getElementById("tdSearch").value=""; document.getElementById("tdOpen").checked=false;
+  document.getElementById("tdHideEmpty").checked=false; document.getElementById("tdWs").value="";
+  showView("todo");
+  requestAnimationFrame(()=>{
+    const card=document.querySelector(`#todoList .todo-task[data-uid="${uid}"]`); if(!card) return;
+    card.scrollIntoView({behavior:"smooth",block:"center"});
+    card.classList.add("flash"); setTimeout(()=>card.classList.remove("flash"),1600);
+    const exp=card.querySelector("[data-act=expand]");
+    if(exp) exp.click(); else { const inp=card.querySelector("[data-act=addinput]"); if(inp) inp.focus(); }
+  });
+}
 (function wireTodos(){
   ["tdWs","tdSearch","tdOpen","tdHideEmpty"].forEach(id=>document.getElementById(id).addEventListener("input",buildTodos));
+  // click a Gantt task row -> open its to-do list
+  document.getElementById("gtbl").addEventListener("click",e=>{ const tr=e.target.closest("tr.gtask"); if(tr&&tr.dataset.uid) openTaskTodos(tr.dataset.uid); });
   const list=document.getElementById("todoList");
   list.addEventListener("change",e=>{ if(e.target.dataset.act!=="toggle") return;
     const card=e.target.closest(".todo-task"), d=tdTask(card), ti=+e.target.closest(".todo-item").dataset.ti;
