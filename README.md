@@ -47,7 +47,12 @@ multi‑project tool** that works for any kind of project.
   renaming a code remaps that project's task IDs. Defaults to a standard list.
 - **Import existing Excel/CSV lists** — `.xlsx` / `.csv` reader with a **column‑mapping**
   dialog (auto‑maps German *and* English headers), value normalisation
-  (status / priority / %, dates), into a new or existing project.
+  (status / priority / %, dates), into a new or existing project. The header row is
+  **auto‑detected** (logo/title rows above the table are skipped; overridable), and the
+  real Eurowings columns are recognised (Status, OM‑D Reference, Title, Changed by,
+  Format, Revision Date, …) with their status values (Approved/Complete/Overdue/On Hold/
+  Needs Review/Not Applicable) mapped. Add planned Start + Target dates after import to
+  draw the Gantt.
 - **Export** — native multi‑sheet **`.xlsx`** (one sheet per project + a portfolio summary),
   per‑project `.xlsx` / CSV, and **branded PDF** for every page (print → save as PDF).
 - **Backup & restore** — export/import the whole portfolio as a **JSON** file. This is the

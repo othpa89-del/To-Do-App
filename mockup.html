@@ -1260,22 +1260,22 @@ const IMPORT_FIELDS=[
   ["deps","Dependencies"],["risk","Risks / Issues"],["upd","Last update"],["comment","Comment"]
 ];
 const SYN={
-  task:["aufgabe","deliverable","task","tätigkeit","taetigkeit","activity","titel","maßnahme","massnahme","thema"],
-  ws:["workstream","work stream","arbeitspaket","arbeitspaket beschreibung","bereich","stream","kategorie","modul","gewerk"],
-  sub:["sub-workstream","sub workstream","unterbereich","teilbereich","subkategorie","sub"],
-  desc:["beschreibung","description","details","detail","inhalt","scope"],
-  resp:["verantwortlich","verantwortlicher","responsible","owner","zuständig","zustaendig","lead","bearbeiter"],
-  support:["unterstützend","unterstuetzend","unterstützende","support","supporting","mitwirkende","beteiligte"],
-  start:["start","startdatum","beginn","von","start date","startdate","anfang"],
-  due:["due","due date","duedate","fällig","faellig","enddatum","ende","bis","deadline","termin","zieldatum","soll"],
+  task:["aufgabe","deliverable","task","tätigkeit","taetigkeit","activity","titel","title","maßnahme","massnahme","thema","dokument","document"],
+  ws:["workstream","work stream","arbeitspaket","arbeitspaket beschreibung","bereich","stream","kategorie","modul","gewerk","course","kurs","chapter group"],
+  sub:["sub-workstream","sub workstream","om-d reference","om-d ref","omd reference","reference","ref","chapter","kapitel","unterbereich","teilbereich","subkategorie","sub","section","abschnitt"],
+  desc:["beschreibung","description","details","detail","inhalt","scope","content"],
+  resp:["verantwortlich","verantwortlicher","responsible","owner","zuständig","zustaendig","lead","bearbeiter","changed by","geändert von","geaendert von","author","autor","editor","assignee"],
+  support:["unterstützend","unterstuetzend","unterstützende","support","supporting","mitwirkende","beteiligte","accountable","consulted","informed"],
+  start:["start","startdatum","beginn","von","start date","startdate","anfang","planned start","geplanter start"],
+  due:["due","due date","duedate","fällig","faellig","enddatum","ende","bis","deadline","termin","zieldatum","ziel","target","target date","soll"],
   prio:["priorität","prioritaet","priority","prio","wichtigkeit"],
   status:["status","state","zustand","fortschritt status"],
-  pct:["%","completion","fortschritt","prozent","progress","erledigt","fertigstellung","compl"],
+  pct:["%","completion","fortschritt","prozent","progress","fertigstellung","compl"],
   ms:["milestone","meilenstein"],
   deps:["abhängigkeit","abhaengigkeit","abhängigkeiten","dependencies","dependency","predecessor","vorgänger","vorgaenger"],
   risk:["risiko","risiken","issue","issues","risk","problem"],
-  upd:["letztes update","last update","aktualisiert","updated","stand","änderungsdatum"],
-  comment:["kommentar","comment","bemerkung","notiz","notes","anmerkung","info"]
+  upd:["letztes update","last update","aktualisiert","updated","stand","änderungsdatum","revision date","rev date","revisionsdatum"],
+  comment:["kommentar","comment","bemerkung","notiz","notes","anmerkung","info","filename","storage","filename/storage","format","revision","remark"]
 };
 
 // --- file readers ---
@@ -1381,11 +1381,12 @@ function normWS(v,def){ if(!v) return def; const s=String(v).trim();
   const a=WS.find(w=>w[1].toLowerCase()===s.toLowerCase()); if(a) return a[1];
   const n=WS.find(w=>w[0].toLowerCase()===s.toLowerCase()||w[0].toLowerCase().includes(s.toLowerCase())||s.toLowerCase().includes(w[0].toLowerCase())); if(n) return n[1];
   return s.slice(0,24); }
-function normStatus(v,pct){ const s=String(v||"").toLowerCase();
-  if(/(abgeschlossen|erledigt|fertig|done|complete|closed|100)/.test(s)) return "Completed";
-  if(/(verzög|verzoeg|delay|überfäll|ueberfaell|kritisch|overdue)/.test(s)) return "Delayed";
-  if(/(in arbeit|in progress|laufend|bearbeitung|ongoing|wip|begonnen|started)/.test(s)) return "In Progress";
-  if(/(offen|not started|geplant|^neu|todo|to do|open|nicht begonnen)/.test(s)) return "Not Started";
+function normStatus(v,pct){ const s=String(v||"").toLowerCase().trim();
+  if(/(overdue|verzög|verzoeg|delay|überfäll|ueberfaell)/.test(s)) return "Delayed";
+  if(/(needs review|review|in progress|in arbeit|in bearbeitung|laufend|ongoing|wip|begonnen|started)/.test(s)) return "In Progress";
+  if(/(on hold|hold|angehalten|pausiert|on-hold)/.test(s)) return "Not Started";
+  if(/(abgeschlossen|erledigt|fertig|done|complete|completed|closed|approved|not applicable|n\/a|entfällt|^100$)/.test(s)) return "Completed";
+  if(/(not started|nicht begonnen|offen|geplant|^neu|todo|to do|^open$|backlog)/.test(s)) return "Not Started";
   if(pct>=100) return "Completed"; if(pct>0) return "In Progress"; return "Not Started"; }
 function normPrio(v){ const s=String(v||"").toLowerCase();
   if(/(hoch|high|kritisch|urgent|^1$|^a$)/.test(s)) return "High";
@@ -1408,15 +1409,29 @@ function autoMap(headers){
     if(bi>=0){ map[f]=bi; used.add(bi); } });
   return map;
 }
+// Find the header row automatically (it isn't always row 1 — e.g. logo/title rows above)
+function detectHeaderRow(rows){
+  const scan=Math.min(rows.length,25); let best=0,bestScore=-1;
+  for(let i=0;i<scan;i++){
+    const cells=(rows[i]||[]).map(x=>String(x==null?"":x).trim().toLowerCase());
+    const nonEmpty=cells.filter(Boolean); if(nonEmpty.length<2) continue;
+    let hits=0;
+    nonEmpty.forEach(c=>{ for(const f in SYN){ if(SYN[f].some(s=>c===s||(s.length>2&&(c.includes(s)||s.includes(c))))){ hits++; break; } } });
+    const score=hits*2 + Math.min(nonEmpty.length,10)*0.1;
+    if(score>bestScore){ bestScore=score; best=i; }
+  }
+  return best;
+}
+function impSetHeaderRow(n){ IMP.headerRow=Math.max(0,(parseInt(n,10)||1)-1); renderImportModal(); }
 async function startImport(input){
   const file=input.files&&input.files[0]; if(!file) return;
   try{ const sheets=(await readSpreadsheet(file)).filter(s=>s.rows&&s.rows.length);
     if(!sheets.length){ alert("The file contains no data."); input.value=""; return; }
-    IMP={sheets,si:0,fileName:file.name}; renderImportModal();
+    IMP={sheets,si:0,fileName:file.name,headerRow:null}; renderImportModal();
   }catch(e){ alert("Import failed:\n"+e.message); }
   input.value="";
 }
-function impSwitchSheet(i){ IMP.si=+i; renderImportModal(); }
+function impSwitchSheet(i){ IMP.si=+i; IMP.headerRow=null; renderImportModal(); }
 function closeImport(){ const m=document.getElementById("importModal"); if(m) m.style.display="none"; }
 function readMapping(){ const map={}; document.querySelectorAll("#importModal select[data-impf]").forEach(s=>{ const v=+s.value; if(v>=0) map[s.dataset.impf]=v; }); return map; }
 function updateImpPreview(){
@@ -1426,7 +1441,11 @@ function updateImpPreview(){
   const el=document.getElementById("impPrev"); if(el) el.innerHTML=`<table class="rep-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
 }
 function renderImportModal(){
-  const sh=IMP.sheets[IMP.si]; IMP.headers=sh.rows[0]||[]; IMP.dataRows=sh.rows.slice(1);
+  const sh=IMP.sheets[IMP.si];
+  if(IMP.headerRow==null) IMP.headerRow=detectHeaderRow(sh.rows);
+  const hr=Math.max(0,Math.min(IMP.headerRow, sh.rows.length-1));
+  IMP.headers=sh.rows[hr]||[];
+  IMP.dataRows=sh.rows.slice(hr+1).filter(r=>r.some(c=>String(c==null?"":c).trim()!==""));
   const map=autoMap(IMP.headers);
   const colOpts=sel=>`<option value="-1">— don't import —</option>`+IMP.headers.map((hd,i)=>`<option value="${i}" ${sel===i?"selected":""}>${h(hd||("Column "+colL(i)))}</option>`).join("");
   const sheetSel=IMP.sheets.length>1?`<label style="font-size:13px">Sheet: <select onchange="impSwitchSheet(this.value)">${IMP.sheets.map((s,i)=>`<option value="${i}" ${i===IMP.si?"selected":""}>${h(s.name)}</option>`).join("")}</select></label>`:"";
@@ -1437,7 +1456,7 @@ function renderImportModal(){
   const html=`<div class="imp-card">
     <div class="imp-head"><b>📥 Import Excel / CSV</b><button class="iconbtn" onclick="closeImport()">✕</button></div>
     <div class="imp-body">
-      <div class="imp-row">${sheetSel}<span class="note">${IMP.dataRows.length} data rows · source: ${h(IMP.fileName)}</span></div>
+      <div class="imp-row">${sheetSel}<label style="font-size:13px">Header row: <input id="impHeaderRow" type="number" min="1" value="${hr+1}" style="width:62px;padding:6px 8px;border:1px solid var(--line);border-radius:8px" onchange="impSetHeaderRow(this.value)"></label><span class="note">${IMP.dataRows.length} data rows · source: ${h(IMP.fileName)}</span></div>
       <div class="imp-row">Target: ${projSel} <span id="impNewWrap">· Project name: <input id="impName" value="${defName}" style="min-width:220px"></span></div>
       <div class="imp-row">Default workstream (for empty/unknown): ${defWs}</div>
       <div class="imp-grid">
