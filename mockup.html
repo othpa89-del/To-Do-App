@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Eurowings · Training Portfolio | Multi-Project PM Cockpit (Mockup)</title>
+<title>Eurowings Project Management Cockpit · Trainings Department (TD)</title>
 <style>
   :root{
     /* Eurowings brand palette (from corporate colour guide) */
@@ -309,6 +309,18 @@
   .np-form label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:4px;font-weight:600}
   .np-form input{font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:8px;color:var(--ink)}
   .np-form input:focus{outline:none;border-color:var(--ew-magenta);box-shadow:0 0 0 2px var(--ew-magenta-soft)}
+  .np-toggle{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-weight:600;font-size:12.5px;color:var(--ew-magenta-dark);background:var(--ew-magenta-soft);border:1px solid transparent;padding:9px 13px;border-radius:9px;margin-top:14px}
+  .np-toggle:hover{border-color:var(--ew-magenta)}
+  .np-edit{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
+  .np-edit h4{margin:2px 0 6px;font-size:12.5px;color:var(--ew-magenta-dark)}
+  .np-scroll{overflow-x:auto}
+  .np-tbl{width:100%;border-collapse:collapse;font-size:11.5px}
+  .np-tbl.np-min{min-width:780px}
+  .np-tbl th{text-align:left;color:var(--muted);font-weight:600;font-size:10.5px;padding:3px 5px;border-bottom:1px solid var(--line);white-space:nowrap;background:#fff;position:static}
+  .np-tbl td{padding:2px 4px;border-bottom:1px solid var(--line);vertical-align:middle}
+  .np-tbl input,.np-tbl select{font:inherit;font-size:11.5px;padding:4px 5px;border:1px solid var(--line);border-radius:6px;width:100%;box-sizing:border-box;background:#fff}
+  .np-tbl input:focus,.np-tbl select:focus{outline:none;border-color:var(--ew-magenta)}
+  .np-tbl input.num{width:54px}
   .imp-prev h4{margin:0 0 8px;font-size:12.5px;color:var(--ew-magenta-dark)}
   .imp-prev .rep-table{min-width:0;font-size:11px}
   .imp-foot{display:flex;gap:10px;align-items:center;padding:12px 18px;border-top:1px solid var(--line);flex-wrap:wrap}
@@ -364,7 +376,7 @@
 <div id="authGate" class="auth-overlay" style="display:none">
   <div class="auth-card">
     <div class="auth-head"><div class="logo">EW</div>
-      <div><b>Eurowings · Training Portfolio</b><span>Sign in to sync across your devices</span></div></div>
+      <div><b>Eurowings Project Management Cockpit</b><span>Trainings Department (TD) · sign in to sync across your devices</span></div></div>
     <input id="authEmail" type="email" autocomplete="username" placeholder="Email" />
     <input id="authPw" type="password" autocomplete="current-password" placeholder="Password" />
     <div id="authMsg" class="auth-msg"></div>
@@ -380,11 +392,12 @@
   <div class="brand">
     <div class="logo">EW</div>
     <div>
-      <h1 id="hdrTitle">Eurowings · Training Portfolio</h1>
-      <div class="sub">Eurowings · Flight Training · Project Management Cockpit · <b>MOCKUP v0.2</b></div>
+      <h1 id="hdrTitle">Eurowings Project Management Cockpit</h1>
+      <div class="sub">Trainings Department (TD)</div>
     </div>
   </div>
   <div class="meta" id="hdrMeta" style="display:none">
+    <div><span>Project</span><b class="hdr-edit" contenteditable data-pfield="name" id="hdrProj"></b></div>
     <div><span>Project Lead</span><b class="hdr-edit" contenteditable data-pfield="lead" id="hdrLead"></b></div>
     <div><span>Phase</span><b class="hdr-edit" contenteditable data-pfield="phase" id="hdrPhase"></b></div>
     <div><span>As of</span><b>25 Jun 2026</b></div>
@@ -397,7 +410,7 @@
   <div class="print-header">
     <div style="display:flex;align-items:center;gap:12px">
       <div class="logo">EW</div>
-      <div class="ph-t"><b>Eurowings · Flight Training</b><span id="phProject"></span></div>
+      <div class="ph-t"><b>Eurowings Project Management Cockpit · Trainings Department (TD)</b><span id="phProject"></span></div>
     </div>
     <div class="ph-r"><b id="phView"></b><span>As of 25 Jun 2026 · Chief Training Captain</span></div>
   </div>
@@ -533,7 +546,7 @@
   <!-- STATUS REPORT (one-page PDF) -->
   <section class="panel" id="report"></section>
 
-  <footer id="screenFooter"><b>© Copyright by Patrick Thorn</b> · Eurowings Flight Training · Multi-Project PM Cockpit · Mockup</footer>
+  <footer id="screenFooter"><b>© Copyright by Patrick Thorn</b></footer>
   <div class="print-footer" id="pfFoot"></div>
 </div>
 <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importBackup(this)"/>
@@ -558,24 +571,24 @@ const WS = [
    [ws, sub, taskNo, task, desc, resp, support, start, due, prio, status, pct, milestone, deps, risk, updated, comment] */
 const T = [
 /* === 1 Regulatory & Authority Approvals === */
-["REG","Concept Approval",1,"Training Concept Submission B737 MAX","Prepare & submit the type-rating training concept to the authority (LBA/EASA).","Chief Training Captain","Compliance, Flight Ops","2026-01-08","2026-02-20","High","Completed",100,"No","-","Early authority alignment required","2026-02-20","Basis for MS1"],
+["REG","Concept Approval",1,"Training Concept Submission – New Type","Prepare & submit the type-rating training concept to the authority (LBA/EASA).","Chief Training Captain","Compliance, Flight Ops","2026-01-08","2026-02-20","High","Completed",100,"No","-","Early authority alignment required","2026-02-20","Basis for MS1"],
 ["REG","Concept Approval",2,"Authority Kick-off Meeting","Kick-off meeting with the authority to align the approval path.","Regulatory Compliance Manager","Flight Ops","2026-01-12","2026-01-19","High","Completed",100,"No","REG-1","-","2026-01-19","Went well"],
-["REG","Approval Path",3,"Gap Analysis EASA Part-FCL / Part-ORA","Compare existing ATO approval against MAX requirements.","Regulatory Compliance Manager","Quality, Compliance","2026-02-02","2026-03-13","High","Completed",100,"No","REG-1","-","2026-03-13","No critical gaps"],
-["REG","Approval Path",4,"ATO Extension Application B737 MAX","Formal application to extend the ATO to the B737 MAX type.","Regulatory Compliance Manager","Quality","2026-03-16","2026-04-30","High","In Progress",70,"No","REG-3","Authority processing time unclear","2026-06-18","Queries open"],
-["REG","OEB/Diff",5,"OEB Report Review & Differences","Review Operational Evaluation Board report and derive differences training.","Chief Training Captain","Boeing Liaison, Standards","2026-02-23","2026-04-10","High","Completed",100,"No","REG-1","-","2026-04-10","Diff to B737 NG defined"],
+["REG","Approval Path",3,"Gap Analysis EASA Part-FCL / Part-ORA","Compare existing ATO approval against new type requirements.","Regulatory Compliance Manager","Quality, Compliance","2026-02-02","2026-03-13","High","Completed",100,"No","REG-1","-","2026-03-13","No critical gaps"],
+["REG","Approval Path",4,"ATO Extension Application – New Type","Formal application to extend the ATO to the new type.","Regulatory Compliance Manager","Quality","2026-03-16","2026-04-30","High","In Progress",70,"No","REG-3","Authority processing time unclear","2026-06-18","Queries open"],
+["REG","OEB/Diff",5,"OEB Report Review & Differences","Review Operational Evaluation Board report and derive differences training.","Chief Training Captain","Boeing Liaison, Standards","2026-02-23","2026-04-10","High","Completed",100,"No","REG-1","-","2026-04-10","Diff to legacy type defined"],
 ["REG","Approval Path",6,"Create Compliance Checklist","Compliance demonstration matrix against authority requirements.","Quality Manager","Compliance","2026-04-13","2026-05-29","High","In Progress",55,"No","REG-3","-","2026-06-20","ongoing"],
 ["REG","Authority Audit",7,"Prepare Authority Audit (ATO)","Document & process preparation for the authority audit.","Quality Manager","Training, Compliance","2026-05-04","2026-07-10","High","In Progress",35,"No","REG-4,REG-6","Audit date depends on the authority","2026-06-22","Date being agreed"],
 ["REG","Authority Audit",8,"Conduct Authority Audit","On-site authority audit incl. findings handling.","Regulatory Compliance Manager","Quality, Training","2026-07-13","2026-08-21","High","Not Started",0,"No","REG-7","Findings could delay the schedule","2026-06-22","-"],
-["REG","Final Approval",9,"Authority Approval Received","Formal approval of the MAX training programme by the authority.","Chief Training Captain","Compliance","2026-08-24","2026-09-04","High","Not Started",0,"Yes","REG-8","Critical path – blocks TR courses","2026-06-22","MS2"],
+["REG","Final Approval",9,"Authority Approval Received","Formal approval of the new type training programme by the authority.","Chief Training Captain","Compliance","2026-08-24","2026-09-04","High","Not Started",0,"Yes","REG-8","Critical path – blocks TR courses","2026-06-22","MS2"],
 ["REG","Reporting",10,"Regulatory Status Reporting (ongoing)","Monthly compliance/approval status reporting to programme management.","Regulatory Compliance Manager","Quality","2026-02-02","2027-06-15","Medium","In Progress",40,"No","REG-1","-","2026-06-15","Monthly cycle"],
-["REG","Final Approval",11,"OPS Spec / AOC Update B737 MAX","Update Operations Specifications / AOC for the new type.","Regulatory Compliance Manager","Flight Ops, Compliance","2026-09-07","2026-10-09","High","Not Started",0,"No","REG-9","-","2026-06-22","-"],
+["REG","Final Approval",11,"OPS Spec / AOC Update – New Type","Update Operations Specifications / AOC for the new type.","Regulatory Compliance Manager","Flight Ops, Compliance","2026-09-07","2026-10-09","High","Not Started",0,"No","REG-9","-","2026-06-22","-"],
 
 /* === 2 OM-D === */
-["OMD","Structure",1,"OM-D Gap Analysis NG → MAX","Analyse OM-D adaptation needs for B737 MAX training chapters.","OM-D Author","Standards, Flight Ops","2026-02-02","2026-03-06","High","Completed",100,"No","-","-","2026-03-06","completed"],
-["OMD","Structure",2,"Define OM-D Chapter Structure","Define the OM-D MAX outline / chapter structure.","Standards Manager","OM-D Author","2026-03-09","2026-03-27","Medium","Completed",100,"No","OMD-1","-","2026-03-27","-"],
+["OMD","Structure",1,"OM-D Gap Analysis (legacy → new type)","Analyse OM-D adaptation needs for the new-type training chapters.","OM-D Author","Standards, Flight Ops","2026-02-02","2026-03-06","High","Completed",100,"No","-","-","2026-03-06","completed"],
+["OMD","Structure",2,"Define OM-D Chapter Structure","Define the OM-D new type outline / chapter structure.","Standards Manager","OM-D Author","2026-03-09","2026-03-27","Medium","Completed",100,"No","OMD-1","-","2026-03-27","-"],
 ["OMD","Content",3,"OM-D Type Rating Syllabus","Develop the type-rating syllabus in the OM-D.","Chief Training Captain","Standards, OM-D Author","2026-03-30","2026-05-15","High","In Progress",65,"No","OMD-2,REG-5","Depends on OEB differences","2026-06-19","Draft in review"],
-["OMD","Content",4,"OM-D Differences/Familiarisation Training","Chapter on differences/familiarisation training NG↔MAX.","Standards Manager","OM-D Author","2026-04-13","2026-05-29","High","In Progress",50,"No","REG-5","-","2026-06-19","-"],
-["OMD","Content",5,"OM-D Recurrent & Refresher Concept","Recurrent training & refresher requirements for MAX.","OM-D Author","Standards","2026-05-04","2026-06-19","Medium","In Progress",40,"No","OMD-3","-","2026-06-20","-"],
+["OMD","Content",4,"OM-D Differences/Familiarisation Training","Chapter on differences/familiarisation training legacy ↔ new type.","Standards Manager","OM-D Author","2026-04-13","2026-05-29","High","In Progress",50,"No","REG-5","-","2026-06-19","-"],
+["OMD","Content",5,"OM-D Recurrent & Refresher Concept","Recurrent training & refresher requirements for new type.","OM-D Author","Standards","2026-05-04","2026-06-19","Medium","In Progress",40,"No","OMD-3","-","2026-06-20","-"],
 ["OMD","Content",6,"OM-D LOFT / Scenario Based Training","Line Oriented Flight Training & scenario-based units.","Standards Manager","Training","2026-05-18","2026-07-03","Medium","Not Started",0,"No","OMD-3","-","2026-06-20","-"],
 ["OMD","Content",7,"OM-D Checking & Assessment Standards","Checking and assessment standards (EBT/competencies) in the OM-D.","Chief Training Captain","Standards, Examiner Lead","2026-05-25","2026-07-17","High","Not Started",0,"No","OMD-3","-","2026-06-20","-"],
 ["OMD","Review",8,"OM-D Internal Review Cycle","Internal quality & subject-matter review round of the OM-D.","Quality Manager","Standards, Flight Ops","2026-07-06","2026-08-07","High","Not Started",0,"No","OMD-3,OMD-4,OMD-7","-","2026-06-20","-"],
@@ -584,62 +597,62 @@ const T = [
 ["OMD","Maintenance",11,"OM-D Revision Control & Distribution","Revision management & distribution of OM-D approved states.","OM-D Author","IT, Documentation","2026-09-21","2027-06-15","Low","Not Started",0,"No","OMD-10","-","2026-06-20","-"],
 
 /* === 3 OM-D Annex === */
-["OMDA","Planning",1,"Define Annex Overview & Needs","Define the required OM-D annexes (forms, records, briefings) for MAX.","Standards Manager","OM-D Author","2026-03-02","2026-03-20","Medium","Completed",100,"No","OMD-2","-","2026-03-20","-"],
-["OMDA","Forms",2,"Annex Training Records / Forms","Training records, assessment forms & record templates for MAX.","OM-D Author","Crew Training, IT","2026-03-23","2026-05-08","Medium","In Progress",60,"No","OMDA-1","-","2026-06-17","-"],
+["OMDA","Planning",1,"Define Annex Overview & Needs","Define the required OM-D annexes (forms, records, briefings) for new type.","Standards Manager","OM-D Author","2026-03-02","2026-03-20","Medium","Completed",100,"No","OMD-2","-","2026-03-20","-"],
+["OMDA","Forms",2,"Annex Training Records / Forms","Training records, assessment forms & record templates for new type.","OM-D Author","Crew Training, IT","2026-03-23","2026-05-08","Medium","In Progress",60,"No","OMDA-1","-","2026-06-17","-"],
 ["OMDA","Briefings",3,"Annex Briefing Guides","Standard briefing guides for sim & flight sessions.","Standards Manager","Training","2026-04-06","2026-05-22","Medium","In Progress",45,"No","OMDA-1","-","2026-06-17","-"],
 ["OMDA","Checklists",4,"Annex Instructor Checklists","Checklists & guides for instructors (TRI/SFI).","TRI Lead","Standards","2026-04-20","2026-06-05","Medium","In Progress",30,"No","OMDA-1","-","2026-06-19","-"],
 ["OMDA","Grading",5,"Annex Competency Grading Scheme","Competency-based grading scheme (annex to the OM-D checking chapter).","Examiner Lead (TRE)","Standards","2026-05-04","2026-06-19","High","Not Started",0,"No","OMD-7","-","2026-06-19","-"],
-["OMDA","Forms",6,"Annex Pre-Course Joining Instructions","Participant info pack & joining instructions for MAX courses.","Crew Training Coordinator","HR, Crew Planning","2026-05-11","2026-06-26","Low","Not Started",0,"No","OMDA-2","-","2026-06-19","-"],
+["OMDA","Forms",6,"Annex Pre-Course Joining Instructions","Participant info pack & joining instructions for new type courses.","Crew Training Coordinator","HR, Crew Planning","2026-05-11","2026-06-26","Low","Not Started",0,"No","OMDA-2","-","2026-06-19","-"],
 ["OMDA","Records",7,"Annex Record-Keeping Requirements","Requirements for audit-proof training documentation.","Quality Manager","IT, Documentation","2026-05-18","2026-07-03","Medium","Not Started",0,"No","OMDA-2","-","2026-06-19","-"],
 ["OMDA","Review",8,"Annex Consolidation & Review","Consolidate & review all annexes.","OM-D Author","Quality, Standards","2026-07-06","2026-08-07","Medium","Not Started",0,"No","OMDA-2,OMDA-3,OMDA-4,OMDA-5","-","2026-06-19","-"],
 ["OMDA","Approval",9,"Annex Release with OM-D","Release the annexes together with OM-D acceptance.","Chief Training Captain","Compliance","2026-08-10","2026-09-18","Medium","Not Started",0,"No","OMDA-8,OMD-10","-","2026-06-19","-"],
 ["OMDA","Distribution",10,"Annex Distribution & EFB Integration","Provide the annexes/forms in EFB & training systems.","IT Coordinator","Documentation","2026-09-21","2026-10-23","Low","Not Started",0,"No","OMDA-9","-","2026-06-19","-"],
 
 /* === 4 Instructor Training === */
-["INS","Planning",1,"TRI/SFI Demand Planning MAX","Determine the number of instructors (TRI/SFI) required for EIS.","Chief Training Captain","Crew Planning, HR","2026-02-09","2026-03-13","High","Completed",100,"No","-","-","2026-03-13","12 TRI / 6 SFI needed"],
+["INS","Planning",1,"TRI/SFI Demand Planning – New Type","Determine the number of instructors (TRI/SFI) required for EIS.","Chief Training Captain","Crew Planning, HR","2026-02-09","2026-03-13","High","Completed",100,"No","-","-","2026-03-13","12 TRI / 6 SFI needed"],
 ["INS","Selection",2,"Instructor Nomination & Selection","Select & nominate the instructor candidates.","Head of Training","Crew Planning","2026-03-16","2026-04-17","High","Completed",100,"No","INS-1","-","2026-04-17","Candidates confirmed"],
-["INS","Curriculum",3,"Instructor Course Syllabus (MAX Diff)","Syllabus for the instructor differences course B737 MAX.","Standards Manager","Chief Training Captain","2026-04-06","2026-05-22","High","In Progress",60,"No","REG-5,OMD-3","-","2026-06-20","-"],
+["INS","Curriculum",3,"Instructor Course Syllabus (Type Diff)","Syllabus for the instructor differences course for the new type.","Standards Manager","Chief Training Captain","2026-04-06","2026-05-22","High","In Progress",60,"No","REG-5,OMD-3","-","2026-06-20","-"],
 ["INS","Boeing",4,"Boeing Instructor Familiarisation","Boeing-side instructor familiarisation / train-the-trainer.","Boeing Liaison","Training","2026-05-11","2026-06-12","High","In Progress",25,"No","BOE-3","Boeing slots limited","2026-06-20","Dates at Boeing"],
 ["INS","Ground",5,"Instructor Ground/Technical Training","Technical type training of the instructors (systems/CBT).","TRI Lead","Training Dev","2026-06-15","2026-07-17","High","Not Started",0,"No","INS-3,TMD-3","-","2026-06-20","-"],
-["INS","Simulator",6,"Instructor Simulator Training","FFS training of the instructors on the MAX simulator.","TRI Lead","Simulator Manager","2026-07-20","2026-08-21","High","Not Started",0,"No","INS-5,SIM-7","Depends on sim availability","2026-06-20","critical path"],
+["INS","Simulator",6,"Instructor Simulator Training","FFS training of the instructors on the new type simulator.","TRI Lead","Simulator Manager","2026-07-20","2026-08-21","High","Not Started",0,"No","INS-5,SIM-7","Depends on sim availability","2026-06-20","critical path"],
 ["INS","Standardisation",7,"Instructor Standardisation Meeting","Standardisation workshop for consistent training delivery.","Standards Manager","TRI Lead","2026-08-24","2026-09-04","Medium","Not Started",0,"No","INS-6","-","2026-06-20","-"],
 ["INS","Qualification",8,"TRI/SFI Skill Test / Assessment","Instructor assessment of competence by TRE/authority.","Examiner Lead (TRE)","Compliance","2026-09-07","2026-09-25","High","Not Started",0,"No","INS-6,EXM-7","-","2026-06-20","-"],
-["INS","Milestone",9,"First Instructor Course Completed","Completion of the first full instructor course MAX.","Chief Training Captain","Training","2026-09-28","2026-10-02","High","Not Started",0,"Yes","INS-8","-","2026-06-20","MS3"],
+["INS","Milestone",9,"First Instructor Course Completed","Completion of the first full instructor course new type.","Chief Training Captain","Training","2026-09-28","2026-10-02","High","Not Started",0,"Yes","INS-8","-","2026-06-20","MS3"],
 ["INS","Records",10,"Instructor Authorisations & Records","Issue instructor authorisations & record keeping.","Crew Training Coordinator","Quality, HR","2026-10-05","2026-10-23","Medium","Not Started",0,"No","INS-9","-","2026-06-20","-"],
 ["INS","Recurrent",11,"Instructor Continuation Concept","Concept for ongoing standardisation/continuation of instructors.","Standards Manager","Training","2026-10-12","2026-11-13","Low","Not Started",0,"No","INS-9","-","2026-06-20","-"],
 
 /* === 5 Examiner Training === */
 ["EXM","Planning",1,"TRE Demand & Authorisation Concept","Clarify Type Rating Examiner demand & authority authorisation.","Chief Training Captain","Compliance, Crew Planning","2026-03-02","2026-04-03","High","Completed",100,"No","-","-","2026-04-03","4 TRE needed"],
 ["EXM","Selection",2,"TRE Nomination & Authority Application","Nominate TRE candidates & apply to the authority.","Head of Training","Compliance","2026-04-06","2026-05-08","High","In Progress",55,"No","EXM-1","Authority authorisation time-critical","2026-06-18","-"],
-["EXM","Curriculum",3,"Examiner Course Syllabus (MAX)","Syllabus for TRE differences/standardisation MAX.","Standards Manager","Chief Training Captain","2026-04-20","2026-06-05","High","In Progress",40,"No","REG-5,OMD-7","-","2026-06-20","-"],
+["EXM","Curriculum",3,"Examiner Course Syllabus (Type)","Syllabus for TRE differences/standardisation new type.","Standards Manager","Chief Training Captain","2026-04-20","2026-06-05","High","In Progress",40,"No","REG-5,OMD-7","-","2026-06-20","-"],
 ["EXM","Standardisation",4,"Examiner Standardisation Material","Standardisation material & assessment calibration.","Examiner Lead (TRE)","Standards","2026-05-18","2026-07-03","Medium","Not Started",0,"No","EXM-3,OMDA-5","-","2026-06-20","-"],
-["EXM","Ground",5,"Examiner Technical/Systems Update","Technical update of examiners on MAX systems.","TRI Lead","Training Dev","2026-07-06","2026-08-07","High","Not Started",0,"No","EXM-3,TMD-3","-","2026-06-20","-"],
+["EXM","Ground",5,"Examiner Technical/Systems Update","Technical update of examiners on new type systems.","TRI Lead","Training Dev","2026-07-06","2026-08-07","High","Not Started",0,"No","EXM-3,TMD-3","-","2026-06-20","-"],
 ["EXM","Simulator",6,"Examiner Simulator Standardisation","Sim standardisation & checking calibration of the TRE.","Examiner Lead (TRE)","Simulator Manager","2026-08-10","2026-09-04","High","Not Started",0,"No","EXM-5,SIM-7","Sim availability","2026-06-20","-"],
 ["EXM","Qualification",7,"TRE Assessment of Competence","Assessment of competence of the examiners (authority/senior TRE).","Regulatory Compliance Manager","Compliance","2026-09-07","2026-09-25","High","Not Started",0,"No","EXM-6","-","2026-06-20","-"],
-["EXM","Milestone",8,"First Examiner Course Completed","Completion of the first examiner course MAX.","Chief Training Captain","Training","2026-09-28","2026-10-02","High","Not Started",0,"Yes","EXM-7","-","2026-06-20","MS4"],
+["EXM","Milestone",8,"First Examiner Course Completed","Completion of the first examiner course new type.","Chief Training Captain","Training","2026-09-28","2026-10-02","High","Not Started",0,"Yes","EXM-7","-","2026-06-20","MS4"],
 ["EXM","Records",9,"Examiner Authorisations Issued","Authority TRE authorisations issued & documented.","Crew Training Coordinator","Compliance, Quality","2026-10-05","2026-10-23","Medium","Not Started",0,"No","EXM-8","-","2026-06-20","-"],
 ["EXM","Oversight",10,"Examiner Standardisation Oversight Plan","Ongoing standardisation/oversight plan for TRE.","Standards Manager","Quality","2026-10-12","2026-11-13","Low","Not Started",0,"No","EXM-8","-","2026-06-20","-"],
 
 /* === 6 Training Devices & Simulator === */
-["SIM","Strategy",1,"Simulator Availability & Sourcing","Market analysis & sourcing of FFS B737 MAX (own/partner/3rd party).","Simulator Manager","Procurement, Boeing Liaison","2026-01-19","2026-03-06","High","Completed",100,"No","-","FFS slots scarce on the market","2026-03-06","2 vendors shortlisted"],
+["SIM","Strategy",1,"Simulator Availability & Sourcing","Market analysis & sourcing of FFS for the new type (own/partner/3rd party).","Simulator Manager","Procurement, Boeing Liaison","2026-01-19","2026-03-06","High","Completed",100,"No","-","FFS slots scarce on the market","2026-03-06","2 vendors shortlisted"],
 ["SIM","Contract",2,"FFS Contract / Slot Booking","Conclude contract & secure slots for the Full Flight Simulator.","Procurement Lead","Simulator Manager, Legal","2026-03-09","2026-04-24","High","In Progress",70,"No","SIM-1","Contract negotiation ongoing","2026-06-15","final round"],
 ["SIM","Devices",3,"FTD / CBT / FMS Trainer Procurement","Procure supplementary training devices (FTD, part-task, CBT).","Simulator Manager","IT, Procurement","2026-03-23","2026-05-29","Medium","In Progress",45,"No","SIM-1","-","2026-06-18","-"],
-["SIM","Data",4,"Simulator Data Package (Boeing)","Procure & load the Boeing sim data package MAX.","Boeing Liaison","Simulator Manager","2026-04-06","2026-05-22","High","In Progress",35,"No","BOE-2","Boeing lead time","2026-06-18","-"],
-["SIM","Installation",5,"Simulator Configuration & Update","Hardware/software configuration of the FFS to MAX standard.","Simulator Manager","IT, Vendor","2026-06-01","2026-07-24","High","Not Started",0,"No","SIM-2,SIM-4","-","2026-06-20","-"],
+["SIM","Data",4,"Simulator Data Package (Boeing)","Procure & load the Boeing sim data package new type.","Boeing Liaison","Simulator Manager","2026-04-06","2026-05-22","High","In Progress",35,"No","BOE-2","Boeing lead time","2026-06-18","-"],
+["SIM","Installation",5,"Simulator Configuration & Update","Hardware/software configuration of the FFS to new type standard.","Simulator Manager","IT, Vendor","2026-06-01","2026-07-24","High","Not Started",0,"No","SIM-2,SIM-4","-","2026-06-20","-"],
 ["SIM","Acceptance",6,"Simulator Acceptance Test","Acceptance tests & technical validation of the simulator.","Simulator Manager","Quality","2026-07-27","2026-08-21","High","Not Started",0,"No","SIM-5","-","2026-06-20","-"],
 ["SIM","Qualification",7,"Simulator Qualification (Authority)","Authority FSTD qualification (initial eval, Level D).","Regulatory Compliance Manager","Simulator Manager, Quality","2026-08-24","2026-09-18","High","Not Started",0,"Yes","SIM-6","Critical – blocks all sim courses","2026-06-20","MS7"],
-["SIM","Operations",8,"Sim Schedule & Slot Planning Courses","Detailed sim scheduling for all MAX courses.","Simulator Manager","Crew Planning, Training","2026-09-21","2026-10-16","Medium","Not Started",0,"No","SIM-7","-","2026-06-20","-"],
+["SIM","Operations",8,"Sim Schedule & Slot Planning Courses","Detailed sim scheduling for all new type courses.","Simulator Manager","Crew Planning, Training","2026-09-21","2026-10-16","Medium","Not Started",0,"No","SIM-7","-","2026-06-20","-"],
 ["SIM","Maintenance",9,"Simulator Maintenance & Support SLA","Maintenance/support concept & SLA for training operations.","Simulator Manager","Vendor, Procurement","2026-09-21","2026-10-30","Low","Not Started",0,"No","SIM-7","-","2026-06-20","-"],
 ["SIM","Devices",10,"EFB / OFP / Performance Tool Setup","Provide EFB apps & performance tools for training.","IT Coordinator","Flight Ops","2026-06-15","2026-08-14","Medium","Not Started",0,"No","SIM-3","-","2026-06-20","-"],
 ["SIM","Recurrent",11,"Sim Recurrent Capacity Planning","Capacity planning for sim recurrent after EIS.","Simulator Manager","Crew Planning","2026-10-19","2026-11-27","Low","Not Started",0,"No","SIM-8","-","2026-06-20","-"],
 
 /* === 7 Training Material Development === */
-["TMD","Planning",1,"Training Material Inventory & Gaps","Stocktake & needs for learning material for MAX.","Training Development Lead","Standards","2026-02-16","2026-03-20","Medium","Completed",100,"No","-","-","2026-03-20","-"],
-["TMD","CBT",2,"CBT / eLearning Modules MAX","Develop computer-based training modules (systems/diff).","Training Development Lead","IT, Boeing Liaison","2026-03-23","2026-05-22","High","In Progress",50,"No","TMD-1,REG-5","-","2026-06-19","-"],
+["TMD","Planning",1,"Training Material Inventory & Gaps","Stocktake & needs for learning material for new type.","Training Development Lead","Standards","2026-02-16","2026-03-20","Medium","Completed",100,"No","-","-","2026-03-20","-"],
+["TMD","CBT",2,"CBT / eLearning Modules – New Type","Develop computer-based training modules (systems/diff).","Training Development Lead","IT, Boeing Liaison","2026-03-23","2026-05-22","High","In Progress",50,"No","TMD-1,REG-5","-","2026-06-19","-"],
 ["TMD","Courseware",3,"Ground School Courseware","Classroom/self-study material for technical & systems.","Training Development Lead","Standards","2026-04-06","2026-06-05","High","In Progress",40,"No","TMD-1","-","2026-06-19","-"],
 ["TMD","FCOM",4,"FCOM/QRH Training Extracts","Training-relevant extracts & preparation from FCOM/QRH.","Standards Manager","Boeing Liaison","2026-04-20","2026-06-05","Medium","In Progress",30,"No","BOE-2","-","2026-06-19","-"],
 ["TMD","Sim",5,"Simulator Lesson Plans / Sortie Guides","Detailed sim lesson plans & sortie guides.","TRI Lead","Standards","2026-05-04","2026-07-03","High","Not Started",0,"No","OMD-3","-","2026-06-19","-"],
-["TMD","Assessment",6,"Knowledge Tests / Question Bank","Build knowledge tests & question bank MAX.","Training Development Lead","Standards","2026-05-18","2026-07-17","Medium","Not Started",0,"No","TMD-3","-","2026-06-19","-"],
+["TMD","Assessment",6,"Knowledge Tests / Question Bank","Build knowledge tests & question bank new type.","Training Development Lead","Standards","2026-05-18","2026-07-17","Medium","Not Started",0,"No","TMD-3","-","2026-06-19","-"],
 ["TMD","Media",7,"Cockpit Posters / Visuals / Animations","Visual learning media (panels, flows, animations).","Training Development Lead","IT","2026-06-01","2026-07-17","Low","Not Started",0,"No","TMD-3","-","2026-06-19","-"],
 ["TMD","Review",8,"Subject Review & Material Validation","Technical & instructional validation of the material.","Standards Manager","Quality, TRI Lead","2026-07-20","2026-08-21","High","Not Started",0,"No","TMD-2,TMD-3,TMD-5","-","2026-06-19","-"],
 ["TMD","LMS",9,"LMS Integration & Deployment","Load the modules into the Learning Management System.","IT Coordinator","Training Dev","2026-08-24","2026-09-18","Medium","Not Started",0,"No","TMD-8","-","2026-06-19","-"],
@@ -647,13 +660,13 @@ const T = [
 ["TMD","Maintenance",11,"Material Revision & Feedback Loop","Revision process & feedback incorporation after course start.","Training Development Lead","Standards","2026-09-28","2027-06-15","Low","Not Started",0,"No","TMD-10","-","2026-06-19","-"],
 
 /* === 8 Documentation & Manuals === */
-["DOC","Planning",1,"Document Map MAX","Overview of all affected manuals & documents for MAX.","Documentation Manager","Standards, Flight Ops","2026-02-09","2026-03-06","Medium","Completed",100,"No","-","-","2026-03-06","-"],
-["DOC","FCOM",2,"FCOM Preparation & Distribution","Provide & distribute FCOM B737 MAX.","Documentation Manager","Boeing Liaison","2026-03-09","2026-04-24","High","In Progress",55,"No","DOC-1,BOE-2","-","2026-06-17","-"],
+["DOC","Planning",1,"Document Map – New Type","Overview of all affected manuals & documents for new type.","Documentation Manager","Standards, Flight Ops","2026-02-09","2026-03-06","Medium","Completed",100,"No","-","-","2026-03-06","-"],
+["DOC","FCOM",2,"FCOM Preparation & Distribution","Provide & distribute FCOM for the new type.","Documentation Manager","Boeing Liaison","2026-03-09","2026-04-24","High","In Progress",55,"No","DOC-1,BOE-2","-","2026-06-17","-"],
 ["DOC","QRH",3,"QRH / Checklist Customisation","Customise & release QRH / normal & non-normal checklists.","Standards Manager","Flight Ops","2026-03-23","2026-05-15","High","In Progress",45,"No","DOC-1","-","2026-06-17","-"],
-["DOC","MEL",4,"MEL / CDL Creation","Create the Minimum Equipment List / CDL for MAX.","Flight Ops Engineering","Compliance","2026-04-06","2026-05-29","High","In Progress",30,"No","DOC-1","Authority approval of MEL","2026-06-17","-"],
-["DOC","Performance",5,"Performance Manual / RTOW","Performance documents & RTOW tables MAX.","Flight Ops Engineering","IT","2026-04-20","2026-06-12","Medium","Not Started",0,"No","DOC-1","-","2026-06-17","-"],
-["DOC","OM-B",6,"OM-B Aircraft Operating Manual","Create/adapt OM-B for type B737 MAX.","Standards Manager","Flight Ops","2026-05-04","2026-06-26","High","Not Started",0,"No","DOC-2,DOC-3","-","2026-06-17","-"],
-["DOC","Route",7,"OM-C Route & Aerodrome Update","Review OM-C relevance / adaptations for MAX operations.","Flight Ops","Standards","2026-05-18","2026-06-26","Low","Not Started",0,"No","DOC-1","-","2026-06-17","-"],
+["DOC","MEL",4,"MEL / CDL Creation","Create the Minimum Equipment List / CDL for new type.","Flight Ops Engineering","Compliance","2026-04-06","2026-05-29","High","In Progress",30,"No","DOC-1","Authority approval of MEL","2026-06-17","-"],
+["DOC","Performance",5,"Performance Manual / RTOW","Performance documents & RTOW tables new type.","Flight Ops Engineering","IT","2026-04-20","2026-06-12","Medium","Not Started",0,"No","DOC-1","-","2026-06-17","-"],
+["DOC","OM-B",6,"OM-B Aircraft Operating Manual","Create/adapt OM-B for the new type.","Standards Manager","Flight Ops","2026-05-04","2026-06-26","High","Not Started",0,"No","DOC-2,DOC-3","-","2026-06-17","-"],
+["DOC","Route",7,"OM-C Route & Aerodrome Update","Review OM-C relevance / adaptations for new type operations.","Flight Ops","Standards","2026-05-18","2026-06-26","Low","Not Started",0,"No","DOC-1","-","2026-06-17","-"],
 ["DOC","Review",8,"Manuals Cross-Review & Consistency","Cross-check & consistency review of all manuals.","Quality Manager","Standards, Documentation","2026-06-29","2026-08-07","High","Not Started",0,"No","DOC-2,DOC-3,DOC-4,DOC-6","-","2026-06-17","-"],
 ["DOC","Approval",9,"Manuals Release & Authority Submission","Release and, where required, submit the relevant manuals.","Regulatory Compliance Manager","Quality","2026-08-10","2026-09-04","High","Not Started",0,"No","DOC-8","-","2026-06-17","-"],
 ["DOC","Distribution",10,"Document Distribution & EFB Sync","Distribute released documents via EFB/DMS.","IT Coordinator","Documentation","2026-09-07","2026-09-25","Medium","Not Started",0,"No","DOC-9","-","2026-06-17","-"],
@@ -672,16 +685,16 @@ const T = [
 ["BOE","Review",10,"Boeing/3rd Party Readiness Review","Joint readiness review with Boeing & partners.","Boeing Liaison","Chief Training Captain","2026-10-19","2026-11-13","Medium","Not Started",0,"No","BOE-3,BOE-6,BOE-9","-","2026-06-20","-"],
 
 /* === 10 Entry Into Service (EIS) === */
-["EIS","Concept MS",1,"Boeing 737 MAX Training Concept Approved","Programme milestone: release of the overall training concept.","Chief Training Captain","Standards, Compliance","2026-02-16","2026-02-20","High","Completed",100,"Yes","REG-1","-","2026-02-20","MS – reached"],
+["EIS","Concept MS",1,"New Aircraft Type Training Concept Approved","Programme milestone: release of the overall training concept.","Chief Training Captain","Standards, Compliance","2026-02-16","2026-02-20","High","Completed",100,"Yes","REG-1","-","2026-02-20","MS – reached"],
 ["EIS","Pilot Pool",2,"Pilot Pool & Conversion Plan","Define the crew pool & sequence of type conversions.","Head of Training","Crew Planning, HR","2026-04-06","2026-05-29","High","In Progress",45,"No","INS-1","-","2026-06-20","-"],
 ["EIS","TR Course",3,"First Pilot Type Rating Course Started","Programme milestone: start of the first pilot type rating course.","Chief Training Captain","Training, Crew Planning","2026-10-05","2026-10-09","High","Not Started",0,"Yes","REG-9,SIM-7,INS-9,TMD-10","Depends on approval + sim + instructors","2026-06-20","MS5 – critical path"],
 ["EIS","TR Course",4,"First Pilot Type Rating Course Completed","Programme milestone: completion of the first TR course incl. skill test.","Chief Training Captain","Examiner Lead, Training","2026-11-30","2026-12-04","High","Not Started",0,"Yes","EIS-3","-","2026-06-20","MS6"],
 ["EIS","Line Training",5,"Line Training / LIFUS Concept","Concept for Line Flying Under Supervision & line-check rules.","Standards Manager","Flight Ops","2026-09-21","2026-11-06","High","Not Started",0,"No","OMD-7","-","2026-06-20","-"],
-["EIS","Crew Planning",6,"Crew Roster Integration MAX","Integrate MAX-qualified crews into rostering.","Crew Planning Manager","Head of Training","2026-11-09","2026-12-11","Medium","Not Started",0,"No","EIS-4","-","2026-06-20","-"],
+["EIS","Crew Planning",6,"Crew Roster Integration – New Type","Integrate new-type-qualified crews into rostering.","Crew Planning Manager","Head of Training","2026-11-09","2026-12-11","Medium","Not Started",0,"No","EIS-4","-","2026-06-20","-"],
 ["EIS","Readiness",7,"Operational Readiness Review","Programme milestone: ORR before line operations start.","Chief Training Captain","Flight Ops, Safety, Quality","2027-01-04","2027-01-15","High","Not Started",0,"Yes","EIS-4,EIS-5,DOC-9","-","2026-06-20","MS9"],
 ["EIS","Safety",8,"Safety Risk Assessment EIS","Safety assessment & risk assessment for entry into service.","Safety Manager","Flight Ops, Quality","2026-11-16","2026-12-18","High","Not Started",0,"No","EIS-5","-","2026-06-20","-"],
 ["EIS","Line Check",9,"Initial Line Check Programme","Initial line checks & release of the first line crews.","Examiner Lead (TRE)","Flight Ops","2027-01-18","2027-02-26","High","Not Started",0,"No","EIS-7","-","2026-06-20","-"],
-["EIS","Go-Live",10,"Entry Into Service (EIS)","Programme milestone: start of commercial MAX line operations.","Chief Training Captain","Flight Ops, Network, Safety","2027-06-08","2027-06-15","High","Not Started",0,"Yes","EIS-7,EIS-9","End date – overall programme objective","2026-06-20","MS10 – EIS"],
+["EIS","Go-Live",10,"Entry Into Service (EIS)","Programme milestone: start of commercial new type line operations.","Chief Training Captain","Flight Ops, Network, Safety","2027-06-08","2027-06-15","High","Not Started",0,"Yes","EIS-7,EIS-9","End date – overall programme objective","2026-06-20","MS10 – EIS"],
 ["EIS","Post-EIS",11,"Post-EIS Lessons Learned Review","Evaluation & lessons learned after entry into service.","Chief Training Captain","Quality, Safety","2027-06-15","2027-07-15","Low","Not Started",0,"No","EIS-10","-","2026-06-20","-"],
 ];
 
@@ -806,7 +819,7 @@ function recomputeProject(p){ ensureLists(p); p.tasks.forEach(d=>{ if(d.ms==="Ja
 function recompute(){ recomputeProject(PROJECTS[ACTIVE]); }
 function seedPortfolio(){
   PROJECTS = [
-    {id:"p-b737max",name:"Boeing 737 MAX – Type Rating Program",fleet:"Boeing 737-8 MAX",lead:"Chief Training Captain",phase:"Execution",eis:"2027-06-15",tasks:mkTasks(T)},
+    {id:"p-typerating",name:"New Aircraft Type – Type Rating Program",fleet:"New Aircraft Type",lead:"Chief Training Captain",phase:"Execution",eis:"2027-06-15",tasks:mkTasks(T)},
     {id:"p-a320neo",name:"Airbus A320neo – CEO→NEO Differences",fleet:"Airbus A320neo",lead:"Fleet Captain A320",phase:"Execution",eis:"2027-02-15",tasks:mkTasks(T_A320)},
     {id:"p-e195e2",name:"Embraer E195-E2 – New Type Introduction",fleet:"Embraer E195-E2",lead:"Project Captain E2",phase:"Planning",eis:"2027-11-01",tasks:mkTasks(T_E2)},
   ];
@@ -886,20 +899,20 @@ function buildReport(){
   document.getElementById("report").innerHTML = REPORTTYPE==="portfolio" ? portfolioReportHTML() : projectReportHTML(PROJECTS[ACTIVE]);
 }
 function updateHeader(){
-  const p=PROJECTS[ACTIVE], t=document.getElementById("hdrTitle"), meta=document.getElementById("hdrMeta");
+  const p=PROJECTS[ACTIVE], meta=document.getElementById("hdrMeta");
   const portfolioCtx = (VIEW==="portfolio") || (VIEW==="report" && REPORTTYPE==="portfolio");
   if(portfolioCtx){
-    t.textContent="Eurowings · Training Portfolio"; t.removeAttribute("contenteditable"); meta.style.display="none";
+    meta.style.display="none";
   } else {
-    t.setAttribute("contenteditable",""); t.classList.add("hdr-edit"); t.dataset.pfield="name"; t.textContent=p.name;
     meta.style.display="flex";
+    document.getElementById("hdrProj").textContent=p.name;
     document.getElementById("hdrLead").textContent=p.lead;
     document.getElementById("hdrPhase").textContent=p.phase;
     document.getElementById("hdrEis").value=p.eis;
   }
   document.getElementById("phProject").textContent = portfolioCtx ? "Portfolio · all projects" : (p.fleet+" · "+p.name);
   document.getElementById("phView").textContent = VIEWLBL[VIEW];
-  document.getElementById("pfFoot").textContent = COPYRIGHT+" · Eurowings Flight Training · PM Cockpit · "+(portfolioCtx?"Portfolio":p.name)+" · Confidential / Mockup";
+  document.getElementById("pfFoot").textContent = COPYRIGHT;
 }
 
 /* ---------- STATUS REPORT (1-Seiten-PDF) ---------- */
@@ -935,7 +948,7 @@ function projectReportHTML(p){
   <div class="report-doc">
     <div class="rep-band">
       <div class="rb-l"><div class="logo">EW</div>
-        <div><h2>Status report · ${h(p.name)}</h2><div class="rb-sub">Eurowings · Flight Training · ${h(p.fleet)}</div></div></div>
+        <div><h2>Status report · ${h(p.name)}</h2><div class="rb-sub">Eurowings Project Management Cockpit · Trainings Department (TD) · ${h(p.fleet)}</div></div></div>
       <div class="rb-r"><b>${ht}</b><br>As of 25 Jun 2026 · ${h(p.lead)}</div>
     </div>
     <div class="rep-pad">
@@ -993,7 +1006,7 @@ function portfolioReportHTML(){
   </div>
   <div class="report-doc">
     <div class="rep-band"><div class="rb-l"><div class="logo">EW</div>
-      <div><h2>Portfolio status report</h2><div class="rb-sub">Eurowings · Flight Training · ${PROJECTS.length} projects</div></div></div>
+      <div><h2>Portfolio status report</h2><div class="rb-sub">Eurowings Project Management Cockpit · Trainings Department (TD) · ${PROJECTS.length} projects</div></div></div>
       <div class="rb-r"><b>Avg ${avg}%</b><br>As of 25 Jun 2026 · Chief Training Captain</div></div>
     <div class="rep-pad">
       <div class="rep-kv" style="margin-bottom:16px">
@@ -1122,12 +1135,47 @@ function tplTargetDate(tpl){ const today=new Date(); today.setHours(0,0,0,0);
   let wk=tpl.tasks.reduce((m,r)=>Math.max(m,r[5]+r[6]),0); if(!wk) wk=78;   // ~18 months for a blank project
   const d=new Date(today); d.setDate(d.getDate()+wk*7); return d.toISOString().slice(0,10); }
 
-let NP_SEL="eis", NP_FORM={};
-function newProject(){ NP_SEL="eis"; NP_FORM={}; renderNewProject(); }
+let NP_SEL="eis", NP_FORM={}, NP_EDIT=false, NP_DRAFT={ws:[],tasks:[]};
+function newProject(){ NP_SEL="eis"; NP_FORM={}; NP_EDIT=false; loadDraft(); renderNewProject(); }
+// load an editable working copy of the selected template (workstreams + task skeleton)
+function loadDraft(){ const tpl=TEMPLATES.find(t=>t.id===NP_SEL)||TEMPLATES[0];
+  NP_DRAFT={ ws:(tpl.ws||WS).map(w=>[w[0],w[1]]),
+    tasks: tpl.tasks.map(r=>({ws:r[0],sub:r[1]||"",title:r[2],prio:r[3]||"Medium",ms:!!r[4],sw:r[5],dw:r[6],deps:r[7]||"-"})) }; }
 function npCapture(){ const g=id=>{ const e=document.getElementById(id); return e?e.value:undefined; };
-  NP_FORM={ name:g("npName"), fleet:g("npFleet"), lead:g("npLead") }; }
-function selectTpl(id){ npCapture(); NP_SEL=id; renderNewProject(); }
+  NP_FORM={ name:g("npName"), fleet:g("npFleet"), lead:g("npLead"), target:g("npTarget") }; }
+function selectTpl(id){ npCapture(); NP_SEL=id; delete NP_FORM.target; loadDraft(); renderNewProject(); }
 function closeNewProject(){ const m=document.getElementById("npModal"); if(m) m.style.display="none"; }
+// live edits from the draft tables write straight into NP_DRAFT (no re-render -> focus stays put)
+function npOnEdit(e){ const el=e.target, dk=el.getAttribute&&el.getAttribute("data-dk"); if(!dk) return;
+  const i=+el.getAttribute("data-di"), f=el.getAttribute("data-df");
+  if(dk==="ws"){ if(NP_DRAFT.ws[i]&&f==="name") NP_DRAFT.ws[i][0]=el.value; }
+  else if(dk==="task"){ const t=NP_DRAFT.tasks[i]; if(!t) return; t[f]= f==="ms"?el.checked:el.value; } }
+function npWsOptions(code){ const codes=NP_DRAFT.ws.map(w=>w[1]);
+  let o=NP_DRAFT.ws.map(([n,c])=>`<option value="${h(c)}" ${c===code?"selected":""}>${h(n)}</option>`).join("");
+  if(code&&!codes.includes(code)) o+=`<option value="${h(code)}" selected>${h(code)} (ext.)</option>`; return o; }
+function npToggleEdit(){ npCapture(); NP_EDIT=!NP_EDIT; renderNewProject(); }
+function npWsAdd(){ npCapture(); const taken=new Set(NP_DRAFT.ws.map(w=>w[1])); NP_DRAFT.ws.push(["New workstream",deriveWsCode("New workstream",taken)]); NP_EDIT=true; renderNewProject(); }
+function npWsDel(i){ npCapture(); NP_DRAFT.ws.splice(i,1); renderNewProject(); }
+function npTaskAdd(){ npCapture(); const ws=(NP_DRAFT.ws[0]&&NP_DRAFT.ws[0][1])||"GEN"; NP_DRAFT.tasks.push({ws,sub:"",title:"New task",prio:"Medium",ms:false,sw:0,dw:2,deps:"-"}); NP_EDIT=true; renderNewProject(); }
+function npTaskDel(i){ npCapture(); NP_DRAFT.tasks.splice(i,1); renderNewProject(); }
+function draftTargetDate(draft){ const today=new Date(); today.setHours(0,0,0,0);
+  let wk=draft.tasks.reduce((m,t)=>Math.max(m,(+t.sw||0)+(+t.dw||1)),0); if(!wk) wk=78;
+  const d=new Date(today); d.setDate(d.getDate()+wk*7); return d.toISOString().slice(0,10); }
+function cleanDraftWs(rows){ const out=[], taken=new Set();
+  rows.forEach(r=>{ let name=String(r[0]||"").trim(), code=String(r[1]||"").trim().toUpperCase();
+    if(!name&&!code) return; if(!name) name=code;
+    if(!code) code=deriveWsCode(name,taken); else { let c=code,k=2; while(taken.has(c)){ c=code+k; k++; } code=c; taken.add(c); }
+    out.push([name,code]); });
+  return out.length?out:WS.map(w=>[w[0],w[1]]); }
+function draftToTasks(draft,wsList){ const today=new Date(); today.setHours(0,0,0,0);
+  const iso=off=>{ const x=new Date(today); x.setDate(x.getDate()+off); return x.toISOString().slice(0,10); };
+  const noBy={}, fallback=(wsList&&wsList[0]&&wsList[0][1])||(draft.ws[0]&&draft.ws[0][1])||"GEN";
+  return draft.tasks.filter(t=>String(t.title||"").trim()||String(t.sub||"").trim()).map((t,i)=>{
+    const ws=t.ws||fallback; noBy[ws]=(noBy[ws]||0)+1;
+    const sw=Math.max(+t.sw||0,0), dw=Math.max(+t.dw||1,1);
+    return { uid:i, ws, sub:String(t.sub||"").trim()||"–", no:noBy[ws], task:String(t.title||"").trim()||"Untitled task",
+      desc:"", resp:"", support:"", start:iso(sw*7), due:iso((sw+dw)*7), prio:t.prio||"Medium", status:"Not Started", pct:0,
+      ms:t.ms?"Yes":"No", deps:String(t.deps||"").trim()||"-", risk:"-", upd:iso(0), comment:"", format:"", revision:"", todos:[] }; }); }
 function renderNewProject(){
   const tpl=TEMPLATES.find(t=>t.id===NP_SEL)||TEMPLATES[0];
   const cards=TEMPLATES.map(t=>{ const n=t.tasks.length, ms=tplCountMs(t), wsn=tplWsCount(t);
@@ -1140,34 +1188,61 @@ function renderNewProject(){
   const nameVal=(prev===undefined||prev===""||prev==="New project"||TEMPLATES.some(t=>t.name===prev))?defName:prev;
   const fleetVal=NP_FORM.fleet||"";
   const leadVal=NP_FORM.lead!==undefined?NP_FORM.lead:"Chief Training Captain";
-  const html=`<div class="imp-card" style="width:min(880px,96vw);max-height:92vh;display:flex;flex-direction:column">
+  const targetVal=NP_FORM.target||draftTargetDate(NP_DRAFT);
+  const wsRows=NP_DRAFT.ws.map(([n,c],i)=>`<tr>
+    <td><input data-dk="ws" data-di="${i}" data-df="name" value="${h(n)}"></td>
+    <td><span class="tpl-meta">${h(c)}</span></td>
+    <td><button class="iconbtn" title="Remove" onclick="npWsDel(${i})">✕</button></td></tr>`).join("");
+  const taskRows=NP_DRAFT.tasks.map((t,i)=>`<tr>
+    <td><select data-dk="task" data-di="${i}" data-df="ws">${npWsOptions(t.ws)}</select></td>
+    <td><input data-dk="task" data-di="${i}" data-df="sub" value="${h(t.sub||"")}"></td>
+    <td><input data-dk="task" data-di="${i}" data-df="title" value="${h(t.title||"")}"></td>
+    <td><select data-dk="task" data-di="${i}" data-df="prio">${opt(PRIOS,t.prio||"Medium")}</select></td>
+    <td style="text-align:center"><input type="checkbox" data-dk="task" data-di="${i}" data-df="ms" ${t.ms?"checked":""}></td>
+    <td><input class="num" type="number" min="0" data-dk="task" data-di="${i}" data-df="sw" value="${t.sw==null?0:t.sw}"></td>
+    <td><input class="num" type="number" min="1" data-dk="task" data-di="${i}" data-df="dw" value="${t.dw==null?1:t.dw}"></td>
+    <td><input data-dk="task" data-di="${i}" data-df="deps" value="${h(t.deps||"")}"></td>
+    <td><button class="iconbtn" title="Remove" onclick="npTaskDel(${i})">✕</button></td></tr>`).join("");
+  const editor = NP_EDIT ? `<div class="np-edit">
+      <h4>Workstreams (${NP_DRAFT.ws.length})</h4>
+      <table class="np-tbl" style="table-layout:auto"><thead><tr><th>Name</th><th style="width:80px">Code</th><th style="width:34px"></th></tr></thead><tbody>${wsRows||`<tr><td colspan="3" class="note">No workstreams.</td></tr>`}</tbody></table>
+      <button class="btn ghost" style="margin:6px 0 14px" onclick="npWsAdd()">➕ Add workstream</button>
+      <h4>Tasks &amp; milestones (${NP_DRAFT.tasks.length})</h4>
+      <div class="np-scroll"><table class="np-tbl np-min"><thead><tr><th style="width:150px">Workstream</th><th>Sub-Workstream</th><th>Task / Deliverable</th><th style="width:78px">Priority</th><th style="width:34px">MS</th><th style="width:60px">Start wk</th><th style="width:56px">Dur wk</th><th style="width:90px">Depends on</th><th style="width:34px"></th></tr></thead>
+        <tbody>${taskRows||`<tr><td colspan="9" class="note">No tasks yet — add one below.</td></tr>`}</tbody></table></div>
+      <button class="btn ghost" style="margin-top:6px" onclick="npTaskAdd()">➕ Add task</button>
+      <p class="note">“Start wk / Dur wk” are weeks from the project start (today); task IDs use the workstream code. Everything stays editable after creation too.</p>
+    </div>` : "";
+  const html=`<div class="imp-card" style="width:min(940px,96vw);max-height:92vh;display:flex;flex-direction:column">
     <div class="imp-head"><b>✚ New project</b><button class="iconbtn" onclick="closeNewProject()">✕</button></div>
     <div class="imp-body" style="overflow:auto">
-      <p class="note" style="margin-top:0">Choose a template to start from. Templates pre-fill the workstreams plus a skeleton of tasks &amp; milestones — dates are set relative to today and everything stays fully editable.</p>
+      <p class="note" style="margin-top:0">Choose a template, then review &amp; edit its workstreams and tasks before creating. Dates are set relative to today; everything stays editable afterwards.</p>
       <div class="tpl-grid">${cards}</div>
       <div class="np-form">
         <label>Project name<input id="npName" value="${h(nameVal)}"></label>
-        <label>Fleet / type<input id="npFleet" value="${h(fleetVal)}" placeholder="e.g. Boeing 737-8 MAX"></label>
+        <label>Fleet / type<input id="npFleet" value="${h(fleetVal)}" placeholder="e.g. new aircraft type"></label>
         <label>Project lead<input id="npLead" value="${h(leadVal)}"></label>
-        <label>Target date<input id="npTarget" type="date" value="${tplTargetDate(tpl)}"></label>
+        <label>Target date<input id="npTarget" type="date" value="${targetVal}"></label>
       </div>
+      <span class="np-toggle" onclick="npToggleEdit()">${NP_EDIT?"▾":"▸"} Review &amp; edit content · ${NP_DRAFT.tasks.length} tasks · ${NP_DRAFT.ws.length} workstreams</span>
+      ${editor}
     </div>
-    <div class="imp-foot"><span class="note">Workstreams can be renamed / re-coded later via 🗂 Workstreams.</span>
+    <div class="imp-foot"><span class="note">Add / rename / remove workstreams &amp; tasks above before creating.</span>
       <span style="flex:1"></span>
       <button class="btn ghost" onclick="closeNewProject()">Cancel</button>
       <button class="btn" onclick="createFromTpl()">Create project</button></div></div>`;
   let m=document.getElementById("npModal");
-  if(!m){ m=document.createElement("div"); m.id="npModal"; m.className="imp-overlay"; document.body.appendChild(m); }
+  if(!m){ m=document.createElement("div"); m.id="npModal"; m.className="imp-overlay"; document.body.appendChild(m);
+    m.addEventListener("input",npOnEdit); m.addEventListener("change",npOnEdit); }
   m.innerHTML=html; m.style.display="flex";
 }
 function createFromTpl(){
-  const tpl=TEMPLATES.find(t=>t.id===NP_SEL)||TEMPLATES[0];
-  const name=(document.getElementById("npName").value||tpl.name||"New project").trim()||"New project";
+  const name=(document.getElementById("npName").value||"New project").trim()||"New project";
   const fleet=(document.getElementById("npFleet").value||"").trim()||"–";
   const lead=(document.getElementById("npLead").value||"").trim()||"Chief Training Captain";
-  const target=document.getElementById("npTarget").value||tplTargetDate(tpl);
-  const proj={ id:"p-"+Date.now(), name, fleet, lead, phase:"Planning", eis:target, tasks:tplTasks(tpl.tasks) };
-  if(tpl.ws) proj.ws=tpl.ws.map(w=>[w[0],w[1]]);
+  const ws=cleanDraftWs(NP_DRAFT.ws);
+  const target=document.getElementById("npTarget").value||draftTargetDate(NP_DRAFT);
+  const proj={ id:"p-"+Date.now(), name, fleet, lead, phase:"Planning", eis:target, ws, tasks:draftToTasks(NP_DRAFT,ws) };
   PROJECTS.push(proj); recomputeProject(proj);
   save(); closeNewProject(); openProject(PROJECTS.length-1);
 }

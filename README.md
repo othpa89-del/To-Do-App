@@ -10,9 +10,9 @@ This repository contains two apps:
 
 ## 1) PM Cockpit (`mockup.html`)
 
-A professional, **multi‑project** project‑management cockpit in Eurowings branding.
-Originally built for the Boeing 737 MAX training programme, it is now a **general
-multi‑project tool** that works for any kind of project.
+A professional, **multi‑project** project‑management cockpit in Eurowings branding —
+the **Eurowings Project Management Cockpit · Trainings Department (TD)**. A **general
+multi‑project tool** that works for any kind of training or project.
 
 > **No build, no server, no install.** Just open `mockup.html` in any modern browser
 > (desktop laptop or iPad). Everything runs locally; the interface is in English.
@@ -26,8 +26,10 @@ multi‑project tool** that works for any kind of project.
   Aircraft Type – Entry Into Service**, **Differences / Conversion Training**,
   **Recurrent / Refresher Cycle**, **ATO / Authority Approval** and **Generic Phased
   Project**. Each template pre‑fills the workstreams plus a skeleton of tasks,
-  dependencies and milestones; dates are generated **relative to today** and everything
-  stays fully editable (name / fleet / lead / target date set in the same dialog).
+  dependencies and milestones; dates are generated **relative to today**. The dialog
+  has a **Review & edit** step so the **workstreams and every task / milestone can be
+  changed, added or removed before the project is created** (name / fleet / lead /
+  target date are set in the same dialog), and everything stays editable afterwards.
 - **Per‑project workspace** — independent **Dashboard**, **Tasks** table, **Gantt**
   timeline, **To‑Do** checklists and **Report** for each project.
 - **To‑Do tab** — a checklist per task (the Gantt sub‑items), grouped by workstream:
