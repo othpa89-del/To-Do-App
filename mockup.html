@@ -484,7 +484,7 @@
       <select id="fStatus">
         <option value="">All statuses</option>
       </select>
-      <select id="fPrio"><option value="">All priorities</option><option>High</option><option>Medium</option><option>Low</option></select>
+      <select id="fPrio"><option value="">All priorities</option><option>High</option><option>Low</option><option>Medium</option></select>
       <input id="fSearch" placeholder="🔍 Search task / owner…" style="min-width:240px"/>
       <label style="font-size:12.5px;color:var(--muted)"><input type="checkbox" id="fMs"/> milestones only</label>
       <label style="font-size:12.5px;color:var(--muted)"><input type="checkbox" id="fCp"/> critical path only</label>
@@ -768,6 +768,13 @@ const prioClass = p => ({"High":"p-high","Medium":"p-med","Low":"p-low"}[p]||"p-
 const opt = (arr,v) => arr.map(o=>`<option ${o===v?"selected":""}>${h(o)}</option>`).join("");
 // like opt(), but guarantees the current value is selectable even if it is not in the preset list
 const optWith = (arr,v) => opt(arr.includes(v||"")?arr:[...arr,v],v);
+// case-insensitive, locale-aware alphabetical comparator
+const alpha = (a,b) => String(a).localeCompare(String(b), undefined, {sensitivity:"base", numeric:true});
+// alphabetically-sorted <option>s with a blank entry on top; keeps the current value selectable even if it is not in the list
+const optSorted = (arr,v,blank=true) => { const cur=v==null?"":String(v);
+  const set=[...new Set([...arr, cur].filter(x=>x!=="" && x!=null))].sort(alpha);
+  return (blank?`<option value="" ${!cur?"selected":""}>—</option>`:"")
+    + set.map(o=>`<option ${o===cur?"selected":""}>${h(o)}</option>`).join(""); };
 // Workstreams are freely definable per project (p.ws); default = global WS list
 function pWS(p){ return (p&&p.ws&&p.ws.length)?p.ws:WS; }
 const wsNameFor = (p,a) => { const w=pWS(p).find(x=>x[1]===a); return w?w[0]:a; };
@@ -775,10 +782,10 @@ const wsName = a => wsNameFor(PROJECTS[ACTIVE],a);
 function wsCodes(p){ const base=pWS(p), seen=base.map(w=>w[1]), extra=[];
   ((p&&p.tasks)||[]).forEach(d=>{ if(!seen.includes(d.ws)&&!extra.includes(d.ws)) extra.push(d.ws); });
   return [...base, ...extra.map(c=>[c,c])]; }
-const wsOpt = v => { const list=pWS(PROJECTS[ACTIVE]);
-  const o=list.map(([n,a])=>`<option value="${a}" ${a===v?"selected":""}>${h(n)}</option>`);
-  if(v&&!list.some(w=>w[1]===v)) o.push(`<option value="${h(v)}" selected>${h(v)} (external)</option>`);
-  return o.join(""); };
+const wsOpt = v => { const list=[...pWS(PROJECTS[ACTIVE])].sort((a,b)=>alpha(a[0],b[0]));
+  let o=`<option value="" ${!v?"selected":""}>—</option>`+list.map(([n,a])=>`<option value="${a}" ${a===v?"selected":""}>${h(n)}</option>`).join("");
+  if(v&&!list.some(w=>w[1]===v)) o+=`<option value="${h(v)}" selected>${h(v)} (external)</option>`;
+  return o; };
 function deriveWsCode(name,taken){ const base=String(name||"WS").replace(/[^A-Za-z0-9]+/g," ").trim().toUpperCase();
   let code = base.indexOf(" ")>=0 ? base.split(/\s+/).map(w=>w[0]).join("").slice(0,5) : base.slice(0,4);
   code=code||"WS"; let c=code,i=2; while(taken&&taken.has(c)){ c=code+i; i++; } if(taken) taken.add(c); return c; }
@@ -798,8 +805,8 @@ function addToList(field,val){ const v=String(val||"").trim(); if(!v) return;
   const p=PROJECTS[ACTIVE]; ensureLists(p); if(!p.lists[field].includes(v)) p.lists[field].push(v); }
 function mergeListsFromTasks(p){ ensureLists(p); MGFIELDS.forEach(([f])=>distinctVals(p.tasks,f).forEach(v=>{ if(!p.lists[f].includes(v)) p.lists[f].push(v); })); }
 // build a managed <select> for a cell: current value always selectable, "—" for empty, "➕ New…" to extend the list inline
-function mgSelect(field,v){ const cur=v==null?"":String(v), list=listFor(field).slice();
-  if(cur && !list.includes(cur)) list.push(cur);
+function mgSelect(field,v){ const cur=v==null?"":String(v);
+  const list=[...new Set([...listFor(field), cur].filter(x=>x!=="" && x!=null))].sort(alpha);   // alphabetical
   const opts=list.map(o=>`<option ${o===cur?"selected":""}>${h(o)}</option>`).join("");
   return `<select class="cell-input mgsel" data-field="${field}"><option value="" ${!cur?"selected":""}>—</option>${opts}<option value="__add__">➕ New…</option></select>`; }
 
@@ -1151,7 +1158,7 @@ function npOnEdit(e){ const el=e.target, dk=el.getAttribute&&el.getAttribute("da
   if(dk==="ws"){ if(NP_DRAFT.ws[i]&&f==="name") NP_DRAFT.ws[i][0]=el.value; }
   else if(dk==="task"){ const t=NP_DRAFT.tasks[i]; if(!t) return; t[f]= f==="ms"?el.checked:el.value; } }
 function npWsOptions(code){ const codes=NP_DRAFT.ws.map(w=>w[1]);
-  let o=NP_DRAFT.ws.map(([n,c])=>`<option value="${h(c)}" ${c===code?"selected":""}>${h(n)}</option>`).join("");
+  let o=[...NP_DRAFT.ws].sort((a,b)=>alpha(a[0],b[0])).map(([n,c])=>`<option value="${h(c)}" ${c===code?"selected":""}>${h(n)}</option>`).join("");
   if(code&&!codes.includes(code)) o+=`<option value="${h(code)}" selected>${h(code)} (ext.)</option>`; return o; }
 function npToggleEdit(){ npCapture(); NP_EDIT=!NP_EDIT; renderNewProject(); }
 function npWsAdd(){ npCapture(); const taken=new Set(NP_DRAFT.ws.map(w=>w[1])); NP_DRAFT.ws.push(["New workstream",deriveWsCode("New workstream",taken)]); NP_EDIT=true; renderNewProject(); }
@@ -1197,7 +1204,7 @@ function renderNewProject(){
     <td><select data-dk="task" data-di="${i}" data-df="ws">${npWsOptions(t.ws)}</select></td>
     <td><input data-dk="task" data-di="${i}" data-df="sub" value="${h(t.sub||"")}"></td>
     <td><input data-dk="task" data-di="${i}" data-df="title" value="${h(t.title||"")}"></td>
-    <td><select data-dk="task" data-di="${i}" data-df="prio">${opt(PRIOS,t.prio||"Medium")}</select></td>
+    <td><select data-dk="task" data-di="${i}" data-df="prio">${optSorted(PRIOS,t.prio||"Medium",false)}</select></td>
     <td style="text-align:center"><input type="checkbox" data-dk="task" data-di="${i}" data-df="ms" ${t.ms?"checked":""}></td>
     <td><input class="num" type="number" min="0" data-dk="task" data-di="${i}" data-df="sw" value="${t.sw==null?0:t.sw}"></td>
     <td><input class="num" type="number" min="1" data-dk="task" data-di="${i}" data-df="dw" value="${t.dw==null?1:t.dw}"></td>
@@ -1391,11 +1398,11 @@ function kpi(lbl,val,foot,color){
 /* ---------- TABLE ---------- */
 const fWs=document.getElementById("fWs");
 function rebuildWsFilter(){
-  const opts=`<option value="">All workstreams</option>`+wsCodes(PROJECTS[ACTIVE]).map(([n,a])=>`<option value="${a}">${h(n)}</option>`).join("");
+  const opts=`<option value="">All workstreams</option>`+[...wsCodes(PROJECTS[ACTIVE])].sort((a,b)=>alpha(a[0],b[0])).map(([n,a])=>`<option value="${a}">${h(n)}</option>`).join("");
   [fWs, document.getElementById("tdWs")].forEach(sel=>{ if(!sel) return; const cur=sel.value;
     sel.innerHTML=opts; if([...sel.options].some(o=>o.value===cur)) sel.value=cur; }); }
 (function(){ const fs=document.getElementById("fStatus");
-  fs.innerHTML=`<option value="">All statuses</option>`+STATUSES.map(s=>`<option>${s}</option>`).join(""); })();
+  fs.innerHTML=`<option value="">All statuses</option>`+[...STATUSES].sort(alpha).map(s=>`<option>${s}</option>`).join(""); })();
 ["fWs","fStatus","fPrio","fSearch","fMs","fCp"].forEach(id=>document.getElementById(id).addEventListener("input",renderTable));
 
 function currentRows(){
@@ -1420,13 +1427,13 @@ function renderTable(){
       <td><input type="date" class="cell-input cell-date" data-field="start" value="${d.start}"></td>
       <td><input type="date" class="cell-input cell-date" data-field="due" value="${d.due}"></td>
       <td style="text-align:center" class="durcell">${d.dur}</td>
-      <td><select class="cell-input pill ${prioClass(d.prio)}" data-field="prio">${opt(PRIOS,d.prio)}</select></td>
-      <td><select class="cell-input pill ${statusClass(d.status)}" data-field="status">${opt(STATUSES,d.status)}</select></td>
+      <td><select class="cell-input pill ${prioClass(d.prio)}" data-field="prio">${optSorted(PRIOS,d.prio)}</select></td>
+      <td><select class="cell-input pill ${statusClass(d.status)}" data-field="status">${optSorted(STATUSES,d.status)}</select></td>
       <td><div class="pillbar">${(d.todos&&d.todos.length)
           ? `<span class="cell-num pct-auto" title="Auto from to-dos (${d.todos.filter(t=>t.done).length}/${d.todos.length})">☑${d.pct}</span>`
           : `<input type="number" min="0" max="100" step="5" class="cell-input cell-num" data-field="pct" value="${d.pct}">`
         }<div class="mini" style="flex:1"><i style="width:${d.pct}%"></i></div></div></td>
-      <td style="text-align:center"><select class="cell-input msedit" data-field="ms">${opt(["Yes","No"],d.ms)}</select></td>
+      <td style="text-align:center"><select class="cell-input msedit" data-field="ms">${optSorted(["Yes","No"],d.ms)}</select></td>
       <td><div class="ce" contenteditable data-field="deps">${h(d.deps)}</div></td>
       <td class="${d.risk&&d.risk!=="-"?"risk":""}"><div class="ce" contenteditable data-field="risk">${h(d.risk)}</div></td>
       <td>${mgSelect("format",d.format)}</td>
