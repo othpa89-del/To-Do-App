@@ -627,6 +627,28 @@ function meetingMetaRows(m) {
     ["Organisator", m.organizer], ["Protokollführer", m.recorder],
   ].filter((r) => r[1]);
 }
+
+// Teilnehmer-Schnappschüsse werden beim Hinzufügen gespeichert. Wird die
+// Funktion/Firma einer Person erst SPÄTER im Kontakt ergänzt, fehlt sie im
+// alten Schnappschuss. Vor dem Export füllen wir fehlende Felder aus der
+// aktuellen Kontaktliste nach (per id, ersatzweise per Name).
+export function enrichMeeting(m, persons = []) {
+  if (!m) return m;
+  const byId = {}, byName = {};
+  persons.forEach((p) => { byId[p.id] = p; byName[(p.name || "").toLowerCase()] = p; });
+  const fill = (p) => {
+    const src = byId[p.id] || byName[(p.name || "").toLowerCase()];
+    if (!src) return p;
+    return {
+      ...p,
+      company: p.company || src.company || "",
+      role: p.role || src.role || "",
+      phone: p.phone || src.phone || "",
+      email: p.email || src.email || "",
+    };
+  };
+  return { ...m, participants: (m.participants || []).map(fill), absentees: (m.absentees || []).map(fill) };
+}
 export function meetingToMarkdown(m) {
   const L = [];
   L.push(`# Besprechungsprotokoll – ${m.title || ""}`.trim(), "");

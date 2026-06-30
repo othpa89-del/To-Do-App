@@ -7,7 +7,7 @@ import {
   List, Kanban,
 } from "lucide-react";
 import Sortable from "sortablejs";
-import Meetings, { loadMeetings, meetingToMarkdown, meetingToText, exportWord, printMeeting, copyMeetingToClipboard, emailMeeting } from "./Meetings.jsx";
+import Meetings, { loadMeetings, meetingToMarkdown, meetingToText, exportWord, printMeeting, copyMeetingToClipboard, emailMeeting, enrichMeeting } from "./Meetings.jsx";
 
 // --- Markenfarben (Farbchapter) ---
 const C = {
@@ -1090,22 +1090,25 @@ export default function App() {
               <p className="hint">Pro Meeting: „Kopieren" (formatiert in E-Mail einfügen), „E-Mail" (Mailprogramm öffnen) oder als PDF/Druck, Word, Markdown, TXT. Anlegen/Bearbeiten im Tab „Meeting Minutes".</p>
               {meetings.length === 0 ? <div className="empty">Noch keine Meetings angelegt.</div> : (
                 <ul className="mexp-list">
-                  {meetings.slice().sort((a, b) => (b.date || "").localeCompare(a.date || "")).map((mt) => (
+                  {meetings.slice().sort((a, b) => (b.date || "").localeCompare(a.date || "")).map((mt) => {
+                    const me = enrichMeeting(mt, persons); // Funktion/Firma aus aktuellen Kontakten nachfüllen
+                    return (
                     <li key={mt.id} className="mexp-row">
                       <div className="mexp-info">
                         <span className="mexp-title">{mt.title || "(ohne Titel)"}</span>
                         <span className="mexp-meta">{fmtDay(mt.date)}{mt.type ? " · " + mt.type : ""}{mt.status ? " · " + mt.status : ""}</span>
                       </div>
                       <div className="mexp-actions">
-                        <button className="btn out" onClick={async () => { const ok = await copyMeetingToClipboard(mt); flash(ok ? "Protokoll kopiert – in E-Mail mit Strg/Cmd+V einfügen." : "Kopieren nicht möglich."); }}><Copy size={14} /> Kopieren</button>
-                        <button className="btn out" onClick={() => emailMeeting(mt)}><Mail size={14} /> E-Mail</button>
-                        <button className="btn out" onClick={() => printMeeting(mt)}><Printer size={14} /> PDF</button>
-                        <button className="btn out" onClick={() => exportWord(mt)}><FileText size={14} /> Word</button>
-                        <button className="btn out" onClick={() => downloadBlob(meetingToMarkdown(mt), `Protokoll_${(mt.title || "Meeting").replace(/\s+/g, "_")}.md`, "text/markdown")}>MD</button>
-                        <button className="btn out" onClick={() => downloadBlob(meetingToText(mt), `Protokoll_${(mt.title || "Meeting").replace(/\s+/g, "_")}.txt`, "text/plain")}>TXT</button>
+                        <button className="btn out" onClick={async () => { const ok = await copyMeetingToClipboard(me); flash(ok ? "Protokoll kopiert – in E-Mail mit Strg/Cmd+V einfügen." : "Kopieren nicht möglich."); }}><Copy size={14} /> Kopieren</button>
+                        <button className="btn out" onClick={() => emailMeeting(me)}><Mail size={14} /> E-Mail</button>
+                        <button className="btn out" onClick={() => printMeeting(me)}><Printer size={14} /> PDF</button>
+                        <button className="btn out" onClick={() => exportWord(me)}><FileText size={14} /> Word</button>
+                        <button className="btn out" onClick={() => downloadBlob(meetingToMarkdown(me), `Protokoll_${(mt.title || "Meeting").replace(/\s+/g, "_")}.md`, "text/markdown")}>MD</button>
+                        <button className="btn out" onClick={() => downloadBlob(meetingToText(me), `Protokoll_${(mt.title || "Meeting").replace(/\s+/g, "_")}.txt`, "text/plain")}>TXT</button>
                       </div>
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               )}
             </div>
