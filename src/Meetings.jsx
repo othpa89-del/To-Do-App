@@ -658,12 +658,15 @@ export function enrichMeeting(m, persons = []) {
   const fill = (p) => {
     const src = byId[p.id] || byName[(p.name || "").toLowerCase()];
     if (!src) return p;
+    // Aktuelle Kontaktdaten haben Vorrang (z. B. nach Umbenennen), Schnappschuss
+    // nur als Rückfall – so ist der Export immer auf dem neuesten Stand.
     return {
       ...p,
-      company: p.company || src.company || "",
-      role: p.role || src.role || "",
-      phone: p.phone || src.phone || "",
-      email: p.email || src.email || "",
+      name: src.name || p.name,
+      company: src.company || p.company || "",
+      role: src.role || p.role || "",
+      phone: src.phone || p.phone || "",
+      email: src.email || p.email || "",
     };
   };
   return { ...m, participants: (m.participants || []).map(fill), absentees: (m.absentees || []).map(fill) };
