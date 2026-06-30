@@ -518,7 +518,7 @@ export default function App() {
       profile, categories, companies, persons,
       tasks: { personal: tasks.personal }, meetings: allMeetings, meetingTypes,
     };
-    downloadBlob(JSON.stringify(payload, null, 2), `TODO_${L("Sicherung", "Backup")}_${new Date().toISOString().slice(0, 10)}.json`, "application/json");
+    downloadBlob(JSON.stringify(payload, null, 2), `${new Date().toISOString().slice(0, 10).replace(/-/g, "")}_TODO_${L("Sicherung", "Backup")}.json`, "application/json");
     flash(L("Sicherung erstellt (inkl. Meetings).", "Backup created (incl. meetings)."));
   }
   function onRestoreFile(e) {
@@ -659,7 +659,7 @@ export default function App() {
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "TO DO");
       const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-      downloadBlob(out, `TODO_${new Date().toISOString().slice(0, 10)}.xlsx`, "application/octet-stream");
+      downloadBlob(out, `${new Date().toISOString().slice(0, 10).replace(/-/g, "")}_TODO.xlsx`, "application/octet-stream");
       flash(L("Excel-Datei erstellt.", "Excel file created."));
     } catch { flash(L("Excel-Export fehlgeschlagen.", "Excel export failed.")); }
   }
@@ -683,7 +683,7 @@ export default function App() {
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, L("Personen", "Persons"));
       const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-      downloadBlob(out, `${L("Personen", "Persons")}_${new Date().toISOString().slice(0, 10)}.xlsx`, "application/octet-stream");
+      downloadBlob(out, `${new Date().toISOString().slice(0, 10).replace(/-/g, "")}_${L("Personen", "Persons")}.xlsx`, "application/octet-stream");
       flash(L("Excel-Datei erstellt.", "Excel file created."));
     } catch { flash(L("Excel-Export fehlgeschlagen.", "Excel export failed.")); }
   }
@@ -1120,8 +1120,8 @@ export default function App() {
                         <button className="btn out" onClick={() => emailMeeting(me)}><Mail size={14} /> {L("E-Mail", "Email")}</button>
                         <button className="btn out" onClick={() => printMeeting(me)}><Printer size={14} /> {L("PDF", "PDF")}</button>
                         <button className="btn out" onClick={() => exportWord(me)}><FileText size={14} /> {L("Word", "Word")}</button>
-                        <button className="btn out" onClick={() => downloadBlob(meetingToMarkdown(me), `${L("Protokoll", "Minutes")}_${(mt.title || "Meeting").replace(/\s+/g, "_")}.md`, "text/markdown")}>MD</button>
-                        <button className="btn out" onClick={() => downloadBlob(meetingToText(me), `${L("Protokoll", "Minutes")}_${(mt.title || "Meeting").replace(/\s+/g, "_")}.txt`, "text/plain")}>TXT</button>
+                        <button className="btn out" onClick={() => downloadBlob(meetingToMarkdown(me), `${(mt.date || new Date().toISOString().slice(0, 10)).replace(/-/g, "")}_${L("Protokoll", "Minutes")}_${(mt.title || "Meeting").replace(/\s+/g, "_")}.md`, "text/markdown")}>MD</button>
+                        <button className="btn out" onClick={() => downloadBlob(meetingToText(me), `${(mt.date || new Date().toISOString().slice(0, 10)).replace(/-/g, "")}_${L("Protokoll", "Minutes")}_${(mt.title || "Meeting").replace(/\s+/g, "_")}.txt`, "text/plain")}>TXT</button>
                       </div>
                     </li>
                     );

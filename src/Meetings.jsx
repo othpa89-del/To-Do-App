@@ -768,7 +768,7 @@ export function printMeeting(m) {
 }
 export function exportWord(m) {
   const html = meetingHTML(m, true);
-  downloadFile("﻿" + html, `${L("Protokoll", "Minutes")}_${(m.title || "Meeting").replace(/\s+/g, "_")}.doc`, "application/msword");
+  downloadFile("﻿" + html, `${(m.date || new Date().toISOString().slice(0, 10)).replace(/-/g, "")}_${L("Protokoll", "Minutes")}_${(m.title || "Meeting").replace(/\s+/g, "_")}.doc`, "application/msword");
 }
 
 // Kompaktes, inline-formatiertes HTML-Fragment fürs Einfügen in E-Mails
