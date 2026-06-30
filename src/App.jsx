@@ -311,7 +311,13 @@ export default function App() {
 
   useEffect(() => {
     if (printNonce > 0) {
-      const t = setTimeout(() => window.print(), 60);
+      let printed = false;
+      const go = () => { if (printed) return; printed = true; window.print(); };
+      // Schrift erst laden lassen, dann drucken (sonst Ersatz-Glyphen im PDF)
+      try {
+        if (document.fonts && document.fonts.ready) { document.fonts.ready.then(() => setTimeout(go, 80)); }
+      } catch {}
+      const t = setTimeout(go, 400);
       return () => clearTimeout(t);
     }
   }, [printNonce]);

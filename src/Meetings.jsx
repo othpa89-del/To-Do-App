@@ -675,8 +675,9 @@ export function meetingToMarkdown(m) {
   LINES.push("");
   if ((m.participants || []).length) { LINES.push(`## ${L("Teilnehmer", "Participants")}`); m.participants.forEach((p) => LINES.push(`- ${p.name}${p.company ? ` (${p.company})` : ""}${p.role ? `, ${p.role}` : ""}`)); LINES.push(""); }
   if ((m.absentees || []).length) { LINES.push(`## ${L("Abwesend", "Absent")}`); m.absentees.forEach((p) => LINES.push(`- ${p.name}`)); LINES.push(""); }
+  const noneMd = L("— keine —", "— none —");
+  LINES.push(`## ${L("Agenda & Mitschrift", "Agenda & minutes")}`);
   if ((m.agenda || []).length) {
-    LINES.push(`## ${L("Agenda & Mitschrift", "Agenda & minutes")}`);
     m.agenda.forEach((a, i) => {
       LINES.push(`### ${i + 1}.${a.title ? " " + a.title : " " + L("(ohne Titel)", "(untitled)")}${a.done ? " ✓" : ""}`);
       if (a.desc) LINES.push(a.desc);
@@ -685,9 +686,11 @@ export function meetingToMarkdown(m) {
         .filter((x) => x[1]).forEach(([k, v]) => LINES.push(`- **${k}:** ${v}`));
       LINES.push("");
     });
-  }
-  if ((m.decisions || []).length) { LINES.push(`## ${L("Entscheidungen", "Decisions")}`); m.decisions.forEach((d) => LINES.push(`- **${d.title}** (${decisionStatusLabel(d.status)}${d.owner ? ", " + d.owner : ""}${d.date ? ", " + fmtDay(d.date) : ""})${d.desc ? " – " + d.desc : ""}`)); LINES.push(""); }
-  if ((m.actionItems || []).length) { LINES.push(`## ${L("Aufgaben", "Tasks")}`); m.actionItems.forEach((a) => LINES.push(`- [ ] ${a.text}`)); LINES.push(""); }
+  } else { LINES.push(noneMd, ""); }
+  LINES.push(`## ${L("Entscheidungen", "Decisions")}`);
+  if ((m.decisions || []).length) { m.decisions.forEach((d) => LINES.push(`- **${d.title}** (${decisionStatusLabel(d.status)}${d.owner ? ", " + d.owner : ""}${d.date ? ", " + fmtDay(d.date) : ""})${d.desc ? " – " + d.desc : ""}`)); LINES.push(""); } else { LINES.push(noneMd, ""); }
+  LINES.push(`## ${L("Aufgaben", "Tasks")}`);
+  if ((m.actionItems || []).length) { m.actionItems.forEach((a) => LINES.push(`- [ ] ${a.text}`)); LINES.push(""); } else { LINES.push(noneMd, ""); }
   if (m.openPoints) { LINES.push(`## ${L("Offene Punkte", "Open points")}`, m.openPoints, ""); }
   if (m.nextMeeting && (m.nextMeeting.date || m.nextMeeting.note)) LINES.push(`## ${L("Nächstes Meeting", "Next meeting")}`, `${fmtDay(m.nextMeeting.date)} ${m.nextMeeting.note || ""}`.trim(), "");
   if ((m.images || []).length) { LINES.push(`## ${L("Bilder", "Images")}`); m.images.forEach((im) => LINES.push(`- ${im.name || L("Bild", "Image")}`)); LINES.push(""); }
@@ -718,6 +721,7 @@ function meetingHTML(m, forWord) {
   const imgs = (m.images || []).map((im) => `<a href="${im.dataUrl}" download="${esc(im.name) || "bild"}"><img class="ph" src="${im.dataUrl}" alt="${esc(im.name)}" /></a>`).join("");
   const att = (m.attachments || []).map((f) => `<li><a href="${f.dataUrl}" download="${esc(f.name) || "datei"}">${esc(f.name)}</a></li>`).join("");
   const voc = (m.voice || []).map((v) => `<li>${esc(v.name)}</li>`).join("");
+  const none = `<p class="muted">${L("— keine —", "— none —")}</p>`;
   const style = `
     body{font-family:'Mulish',Arial,sans-serif;color:#1f2937;margin:0;padding:${forWord ? "28px 32px" : "14mm 16mm"};}
     .hd{display:flex;align-items:center;gap:14px;border-bottom:3px solid ${C.burgundy};padding-bottom:12px;margin-bottom:16px;}
@@ -735,7 +739,8 @@ function meetingHTML(m, forWord) {
     .mm-tbl td{border:1px solid #cbd5e1;}
     .ph{max-width:46%;margin:6px 6px 0 0;border:1px solid #e5e7eb;border-radius:6px;vertical-align:top;}
     .sign{display:flex;gap:40px;margin-top:36px;} .sign div{flex:1;border-top:1px solid #9ca3af;padding-top:5px;font-size:11px;color:#6b7280;text-align:center;}
-    .cpr{margin-top:22px;text-align:center;font-size:9px;color:#9ca3af;}
+    .gen{margin-top:20px;text-align:center;font-size:9px;color:#b9bec7;}
+    .cpr{margin-top:6px;text-align:center;font-size:9px;color:#9ca3af;}
     @page{margin:${forWord ? "14mm" : "0"};}
     @media print{@page{margin:${forWord ? "14mm" : "0"};}}
   `;
@@ -747,15 +752,16 @@ function meetingHTML(m, forWord) {
     <h2>${L("Eckdaten", "Key data")}</h2><table>${meta}</table>
     ${parts ? `<h2>${L("Teilnehmer", "Participants")}</h2><ul>${parts}</ul>` : ""}
     ${absent ? `<h2>${L("Abwesend", "Absent")}</h2><ul>${absent}</ul>` : ""}
-    ${agenda ? `<h2>${L("Agenda & Mitschrift", "Agenda & minutes")}</h2>${agenda}` : ""}
-    ${decisions ? `<h2>${L("Entscheidungen", "Decisions")}</h2><table><tr><th>${L("Titel", "Title")}</th><th>${L("Verantwortlich", "Responsible")}</th><th>${L("Datum", "Date")}</th><th>${L("Status", "Status")}</th></tr>${decisions}</table>` : ""}
-    ${actions ? `<h2>${L("Aufgaben", "Tasks")}</h2><ul>${actions}</ul>` : ""}
+    <h2>${L("Agenda & Mitschrift", "Agenda & minutes")}</h2>${agenda || none}
+    <h2>${L("Entscheidungen", "Decisions")}</h2>${decisions ? `<table><tr><th>${L("Titel", "Title")}</th><th>${L("Verantwortlich", "Responsible")}</th><th>${L("Datum", "Date")}</th><th>${L("Status", "Status")}</th></tr>${decisions}</table>` : none}
+    <h2>${L("Aufgaben", "Tasks")}</h2>${actions ? `<ul>${actions}</ul>` : none}
     ${m.openPoints ? `<h2>${L("Offene Punkte", "Open points")}</h2><p>${esc(m.openPoints)}</p>` : ""}
     ${(m.nextMeeting && (m.nextMeeting.date || m.nextMeeting.note)) ? `<h2>${L("Nächstes Meeting", "Next meeting")}</h2><p>${esc(fmtDay(m.nextMeeting.date))} ${esc(m.nextMeeting.note)}</p>` : ""}
     ${imgs ? `<h2>${L("Bilder", "Images")}</h2>${imgs}` : ""}
     ${att ? `<h2>${L("Anlagen", "Attachments")}</h2><ul>${att}</ul>` : ""}
     ${voc ? `<h2>${L("Sprachmemos", "Voice memos")}</h2><ul>${voc}</ul>` : ""}
     <div class="sign"><div>${L("Organisator", "Organizer")}${m.organizer ? " – " + esc(m.organizer) : ""}</div><div>${L("Protokollführer", "Minute taker")}${m.recorder ? " – " + esc(m.recorder) : ""}</div></div>
+    <div class="gen">${L("Erstellt am", "Created on")} ${esc(new Date().toLocaleString(getLang() === "en" ? "en-GB" : "de-DE"))}</div>
     <div class="cpr">© Copyright by Patrick Thorn</div>
     </body></html>`;
 }
@@ -764,7 +770,16 @@ export function printMeeting(m) {
   if (!w) { alert(L("Bitte Pop-ups erlauben, um zu drucken.", "Please allow pop-ups to print.")); return; }
   w.document.write(meetingHTML(m));
   w.document.close(); w.focus();
-  setTimeout(() => { try { w.print(); } catch {} }, 400);
+  // Erst drucken, wenn die Schrift (Mulish) wirklich geladen ist – sonst werden
+  // einzelne Zeichen in einer Ersatzschrift gedruckt (I/l sehen dann anders aus).
+  let printed = false;
+  const go = () => { if (printed) return; printed = true; try { w.print(); } catch {} };
+  try {
+    if (w.document.fonts && w.document.fonts.ready) {
+      w.document.fonts.ready.then(() => setTimeout(go, 150));
+      setTimeout(go, 2500); // Fallback, falls fonts.ready nicht auslöst
+    } else setTimeout(go, 800);
+  } catch { setTimeout(go, 800); }
 }
 export function exportWord(m) {
   const html = meetingHTML(m, true);
