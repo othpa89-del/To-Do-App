@@ -365,11 +365,19 @@ export default function App() {
   function cancelPerson() { setPEditId(null); setPForm({ name: "", company: "", role: "", email: "", phone: "", topics: [], notes: "" }); }
   function togglePTopic(c) { setPForm((f) => ({ ...f, topics: f.topics.includes(c) ? f.topics.filter((x) => x !== c) : [...f.topics, c] })); }
 
-  // Daten
-  function doBackup() {
-    const payload = { app: "TO DO APP", version: 2, exportedAt: new Date().toISOString(), categories, companies, persons, tasks: { personal: tasks.personal } };
+  // Daten – vollständige Sicherung (inkl. Meetings & Meeting-Typen)
+  async function doBackup() {
+    let meetingTypes = [];
+    let allMeetings = meetings;
+    try { const r = await window.storage.get("meetingTypes", true); if (r && r.value) meetingTypes = JSON.parse(r.value); } catch {}
+    try { const r = await window.storage.get("meetings", true); if (r && r.value) allMeetings = JSON.parse(r.value); } catch {}
+    const payload = {
+      app: "TO DO APP", version: 3, exportedAt: new Date().toISOString(),
+      profile, categories, companies, persons,
+      tasks: { personal: tasks.personal }, meetings: allMeetings, meetingTypes,
+    };
     downloadBlob(JSON.stringify(payload, null, 2), `TODO_Sicherung_${new Date().toISOString().slice(0, 10)}.json`, "application/json");
-    flash("Sicherung erstellt.");
+    flash("Sicherung erstellt (inkl. Meetings).");
   }
   function onRestoreFile(e) {
     const f = e.target.files && e.target.files[0];
@@ -388,7 +396,10 @@ export default function App() {
       await window.storage.set("categories", JSON.stringify(cats), true);
       await window.storage.set("companies", JSON.stringify(comps), true);
       await window.storage.set("persons", JSON.stringify(pers), true);
-      flash("Sicherung wiederhergestellt.");
+      if (Array.isArray(obj.meetings)) { await window.storage.set("meetings", JSON.stringify(obj.meetings), true); setMeetings(obj.meetings); }
+      if (Array.isArray(obj.meetingTypes)) await window.storage.set("meetingTypes", JSON.stringify(obj.meetingTypes), true);
+      if (typeof obj.profile === "string") { setProfile(obj.profile); await window.storage.set("profile", JSON.stringify(obj.profile), false); }
+      flash("Sicherung wiederhergestellt (inkl. Meetings).");
     } catch { flash("Wiederherstellung teilweise fehlgeschlagen."); }
     setPendingRestore(null);
   }
@@ -847,7 +858,7 @@ export default function App() {
 
             <div className="card">
               <h2>Sicherung</h2>
-              <p className="hint">Lädt alle Aufgaben, Bereiche und Personen als JSON-Datei. Empfohlen regelmäßig, da der App-Speicher nicht garantiert dauerhaft ist.</p>
+              <p className="hint">Lädt <b>alle Daten</b> (Aufgaben, Bereiche, Companies, Personen, Meetings inkl. Anhänge, Meeting-Typen) als eine JSON-Datei. Regelmäßig empfohlen. Mit „Sicherung laden" kannst du alles wiederherstellen.</p>
               <div className="data-row">
                 <button className="btn out" onClick={doBackup}><Download size={15} /> Sicherung herunterladen</button>
                 <label className="btn out filelbl"><Upload size={15} /> Sicherung laden
