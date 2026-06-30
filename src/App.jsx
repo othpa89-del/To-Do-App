@@ -962,14 +962,13 @@ export default function App() {
                     const openP = merged.filter((t) => t.contact && t.contact.toLowerCase() === p.name.toLowerCase() && !isDone(t)).length;
                     return (
                       <div key={p.id} className="prow">
-                        <div className="prow-main" onClick={() => editPerson(p)}>
-                          <span className="prow-name">{p.name}</span>
-                          <span className="prow-sub">{[p.role, p.company].filter(Boolean).join(" · ")}</span>
-                          {p.notes && <span className="prow-notes">Notizen: {p.notes}</span>}
-                        </div>
-                        <div className="prow-contact">
-                          {p.email && <a href={"mailto:" + p.email}><Mail size={12} /> {p.email}</a>}
-                          {p.phone && <a href={"tel:" + p.phone}><Phone size={12} /> {p.phone}</a>}
+                        <span className="prow-name" onClick={() => editPerson(p)}>{p.name}</span>
+                        <div className="prow-fields">
+                          {p.company && <span className="pf"><b>Company:</b> {p.company}</span>}
+                          {p.role && <span className="pf"><b>Funktion:</b> {p.role}</span>}
+                          {p.email && <span className="pf"><b>E-Mail:</b> <a href={"mailto:" + p.email}>{p.email}</a></span>}
+                          {p.phone && <span className="pf"><b>Telefon:</b> <a href={"tel:" + p.phone}>{p.phone}</a></span>}
+                          {p.notes && <span className="pf"><b>Notizen:</b> {p.notes}</span>}
                         </div>
                         <div className="prow-topics">{(p.topics || []).map((c) => <span key={c} className="badge" style={{ color: catColor(c), borderColor: catColor(c) }}>{c}</span>)}</div>
                         <span className="prow-count">{openP} offen</span>
@@ -1747,12 +1746,10 @@ aside.panel .card{position:sticky;top:16px;}
 .kcol-empty{color:${C.line};font-size:13px;text-align:center;padding:10px 0;}
 .plist{display:flex;flex-direction:column;gap:6px;}
 .prow{display:flex;align-items:center;gap:12px;background:${C.white};border:1px solid ${C.line};border-radius:9px;padding:9px 12px;flex-wrap:wrap;}
-.prow-main{cursor:pointer;min-width:150px;flex:1;}
-.prow-name{display:block;font-weight:800;color:${C.ink};font-size:14px;}
-.prow-sub{font-size:12px;color:${C.cool};}
-.prow-notes{display:block;font-size:12px;color:${C.grey};margin-top:3px;white-space:pre-wrap;}
-.prow-contact{display:flex;flex-direction:column;gap:2px;}
-.prow-contact a{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:${C.sky};text-decoration:none;font-weight:600;}
+.prow-name{cursor:pointer;font-weight:800;color:${C.ink};font-size:14px;min-width:120px;}
+.prow-fields{display:flex;flex-wrap:wrap;align-items:center;gap:4px 16px;flex:1;min-width:160px;font-size:12px;color:${C.grey};}
+.pf b{font-weight:700;color:${C.cool};margin-right:3px;}
+.pf a{color:${C.sky};text-decoration:none;font-weight:600;}
 .prow-topics{display:flex;flex-wrap:wrap;gap:4px;max-width:260px;}
 .prow-count{font-size:12px;font-weight:700;color:${C.grey};white-space:nowrap;}
 .app-foot{text-align:center;font-size:14px;font-weight:700;color:#8b93a7;border-top:1px solid ${C.fill};margin-top:6px;padding:18px 12px calc(22px + env(safe-area-inset-bottom));}
