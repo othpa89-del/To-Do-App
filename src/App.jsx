@@ -1874,6 +1874,7 @@ aside.panel .card{position:sticky;top:16px;}
 @media print{
   .screen{display:none !important;}
   .printable{display:block !important;padding:14mm 14mm;}
+  .printable, .printable *{font-family:Arial,"Helvetica Neue",Helvetica,"Segoe UI",Roboto,sans-serif !important;}
   .ctc-root{background:#fff;max-width:none;}
   @page{margin:0;}
   .p-head{display:flex;align-items:center;gap:12px;border-bottom:3px solid ${C.burgundy};padding-bottom:10px;margin-bottom:14px;}

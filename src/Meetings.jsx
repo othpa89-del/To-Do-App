@@ -719,7 +719,8 @@ function meetingHTML(m, forWord) {
   const att = (m.attachments || []).map((f) => `<li><a href="${f.dataUrl}" download="${esc(f.name) || "datei"}">${esc(f.name)}</a></li>`).join("");
   const voc = (m.voice || []).map((v) => `<li>${esc(v.name)}</li>`).join("");
   const style = `
-    body{font-family:'Mulish',Arial,sans-serif;color:#1f2937;margin:0;padding:${forWord ? "28px 32px" : "14mm 16mm"};}
+    body{font-family:Arial,"Helvetica Neue",Helvetica,"Segoe UI",Roboto,sans-serif;color:#1f2937;margin:0;padding:${forWord ? "28px 32px" : "14mm 16mm"};}
+    *{font-family:inherit;}
     .hd{display:flex;align-items:center;gap:14px;border-bottom:3px solid ${C.burgundy};padding-bottom:12px;margin-bottom:16px;}
     .logo{width:40px;height:40px;color:${C.burgundy};}
     .hd h1{font-size:22px;margin:0;color:${C.burgundyDark};letter-spacing:.02em;}
@@ -742,7 +743,7 @@ function meetingHTML(m, forWord) {
   `;
   const planeSvg = `<svg class="logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>`;
   return `<!doctype html><html lang="${getLang() === "en" ? "en" : "de"}"><head><meta charset="utf-8"><title>${L("Protokoll", "Minutes")} ${esc(m.title)}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700;900&display=swap" rel="stylesheet"><style>${style}</style></head>
+<style>${style}</style></head>
     <body>
     <div class="hd">${planeSvg}<div><h1>${L("Besprechungsprotokoll", "Meeting minutes")}</h1><div class="sub">${esc(m.title)} · ${esc(fmtDay(m.date))}</div></div></div>
     <h2>${L("Eckdaten", "Key data")}</h2><table>${meta}</table>
