@@ -240,8 +240,8 @@ export default function Meetings({ persons = [], categories = [], profile = "", 
           <button className={"mm-toggle" + (favOnly ? " on" : "")} onClick={() => setFavOnly((v) => !v)}><Star size={14} /> Favoriten</button>
           <button className={"mm-toggle" + (showArchive ? " on" : "")} onClick={() => setShowArchive((v) => !v)}><Archive size={14} /> {showArchive ? "Archiv" : "Aktiv"}</button>
           <div className="mm-layout">
-            <button className={layout === "list" ? "on" : ""} onClick={() => setLayout("list")} title="Liste"><List size={15} /></button>
-            <button className={layout === "cards" ? "on" : ""} onClick={() => setLayout("cards")} title="Karten"><SquareIcon size={15} /></button>
+            <button className={layout === "list" ? "on" : ""} onClick={() => setLayout("list")} title="Liste"><List size={15} /> Liste</button>
+            <button className={layout === "cards" ? "on" : ""} onClick={() => setLayout("cards")} title="Karten"><SquareIcon size={15} /> Karten</button>
           </div>
         </div>
 
@@ -811,10 +811,9 @@ const css = `
 .mm-fg input[type="date"]{width:auto;padding:5px 7px;font-size:12px;border:1px solid ${C.line};border-radius:8px;-webkit-appearance:none;appearance:none;}
 .mm-toggle{display:inline-flex;align-items:center;gap:5px;font-family:inherit;font-size:13px;font-weight:700;color:${C.grey};background:${C.white};border:1px solid ${C.line};border-radius:8px;padding:7px 10px;cursor:pointer;}
 .mm-toggle.on{background:${C.burgundy};border-color:${C.burgundy};color:#fff;}
-.mm-layout{display:flex;gap:2px;margin-left:auto;}
-.mm-layout button{background:${C.white};border:1px solid ${C.line};color:${C.cool};padding:7px 9px;cursor:pointer;display:flex;}
-.mm-layout button:first-child{border-radius:8px 0 0 8px;} .mm-layout button:last-child{border-radius:0 8px 8px 0;}
-.mm-layout button.on{background:${C.skyPale};border-color:${C.sky};color:${C.sky};}
+.mm-layout{display:flex;gap:6px;margin-left:auto;}
+.mm-layout button{display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;padding:7px 11px;border-radius:8px;border:1px solid ${C.line};background:${C.white};color:${C.grey};}
+.mm-layout button.on{background:${C.burgundy};border-color:${C.burgundy};color:#fff;}
 .mm-empty{background:${C.white};border:1px dashed ${C.line};border-radius:10px;padding:30px;text-align:center;color:${C.cool};font-size:14px;}
 .mm-list{display:flex;flex-direction:column;gap:7px;}
 .mm-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;}
