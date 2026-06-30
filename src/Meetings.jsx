@@ -417,8 +417,8 @@ function MeetingEditor({ meeting, persons, categories, profile, types = MEETING_
           <F label="Ende"><input type="time" value={m.end} onChange={(e) => set("end", e.target.value)} /></F>
           <F label="Ort"><input value={m.location} onChange={(e) => set("location", e.target.value)} placeholder="Raum / Adresse" /></F>
           <F label="Online-Link"><input value={m.onlineLink} onChange={(e) => set("onlineLink", e.target.value)} placeholder="https://…" /></F>
-          <F label="Organisator"><input value={m.organizer} onChange={(e) => set("organizer", e.target.value)} /></F>
-          <F label="Protokollführer"><input value={m.recorder} onChange={(e) => set("recorder", e.target.value)} /></F>
+          <F label="Organisator"><input list="mm-people" value={m.organizer} onChange={(e) => set("organizer", e.target.value)} placeholder="Kontakt wählen oder eintippen …" /></F>
+          <F label="Protokollführer"><input list="mm-people" value={m.recorder} onChange={(e) => set("recorder", e.target.value)} placeholder="Kontakt wählen oder eintippen …" /></F>
         </div>
       </Section>
 
