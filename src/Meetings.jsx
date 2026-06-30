@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { L, useLang, getLang } from "./i18n.js";
 import {
   Plane, Star, Archive, Search, Plus, X, Pencil, Printer, FileText, Download,
   Trash2, Check, Mic, Square as SquareIcon, Image as ImageIcon, Paperclip,
@@ -20,9 +21,23 @@ const MEETING_STATUS = ["Geplant", "Laufend", "Abgeschlossen", "Archiviert"];
 const STATUS_COLOR = { Geplant: C.sky, Laufend: C.amber, Abgeschlossen: C.green, Archiviert: C.cool };
 const DECISION_STATUS = ["Offen", "Beschlossen", "Umgesetzt", "Verworfen"];
 
+// Anzeige-Labels für gespeicherte Status-Werte (gespeicherte value bleibt deutsch).
+const statusLabel = (s) => ({
+  Geplant: L("Geplant", "Planned"),
+  Laufend: L("Laufend", "In progress"),
+  Abgeschlossen: L("Abgeschlossen", "Completed"),
+  Archiviert: L("Archiviert", "Archived"),
+}[s] || s);
+const decisionStatusLabel = (s) => ({
+  Offen: L("Offen", "Open"),
+  Beschlossen: L("Beschlossen", "Decided"),
+  Umgesetzt: L("Umgesetzt", "Implemented"),
+  Verworfen: L("Verworfen", "Rejected"),
+}[s] || s);
+
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const todayISO = () => new Date().toISOString().slice(0, 10);
-const fmtDay = (d) => (d ? new Date(d + "T00:00:00").toLocaleDateString("de-DE") : "");
+const fmtDay = (d) => (d ? new Date(d + "T00:00:00").toLocaleDateString(getLang() === "en" ? "en-GB" : "de-DE") : "");
 
 export async function loadMeetings() {
   try { const r = await window.storage.get("meetings", true); return r && r.value ? JSON.parse(r.value) : []; }
@@ -106,7 +121,7 @@ function RichText({ value, onChange, placeholder }) {
   const sync = () => ref.current && onChange(ref.current.innerHTML);
   const exec = (cmd, arg) => { document.execCommand(cmd, false, arg); sync(); ref.current && ref.current.focus(); };
   const insert = (html) => { document.execCommand("insertHTML", false, html); sync(); };
-  const addLink = () => { const url = prompt("Link-URL:"); if (url) exec("createLink", /^https?:/.test(url) ? url : "https://" + url); };
+  const addLink = () => { const url = prompt(L("Link-URL:", "Link URL:")); if (url) exec("createLink", /^https?:/.test(url) ? url : "https://" + url); };
   const addCheckbox = () => insert('<label class="mm-cb"><input type="checkbox"> </label>&nbsp;');
   const addTable = () => insert('<table class="mm-tbl"><tbody><tr><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td>&nbsp;</td><td>&nbsp;</td></tr></tbody></table><div><br></div>');
   const B = ({ cmd, arg, on, title, children }) => (
@@ -115,13 +130,13 @@ function RichText({ value, onChange, placeholder }) {
   return (
     <div className="mm-rt">
       <div className="mm-rtbar">
-        <B cmd="bold" title="Fett"><Bold size={13} /></B>
-        <B cmd="italic" title="Kursiv"><Italic size={13} /></B>
-        <B cmd="insertUnorderedList" title="Liste"><List size={13} /></B>
-        <B cmd="insertOrderedList" title="Nummerierung"><ListOrdered size={13} /></B>
-        <B on={addCheckbox} title="Checkbox"><CheckSquare size={13} /></B>
-        <B on={addLink} title="Link"><LinkIcon size={13} /></B>
-        <B on={addTable} title="Tabelle">▦</B>
+        <B cmd="bold" title={L("Fett", "Bold")}><Bold size={13} /></B>
+        <B cmd="italic" title={L("Kursiv", "Italic")}><Italic size={13} /></B>
+        <B cmd="insertUnorderedList" title={L("Liste", "List")}><List size={13} /></B>
+        <B cmd="insertOrderedList" title={L("Nummerierung", "Numbering")}><ListOrdered size={13} /></B>
+        <B on={addCheckbox} title={L("Checkbox", "Checkbox")}><CheckSquare size={13} /></B>
+        <B on={addLink} title={L("Link", "Link")}><LinkIcon size={13} /></B>
+        <B on={addTable} title={L("Tabelle", "Table")}>▦</B>
       </div>
       <div className="mm-rtarea" ref={ref} contentEditable suppressContentEditableWarning
         data-ph={placeholder || ""} onInput={sync} onBlur={sync} />
@@ -131,6 +146,7 @@ function RichText({ value, onChange, placeholder }) {
 
 // ===========================================================================
 export default function Meetings({ persons = [], categories = [], profile = "", onCreateTask, companyColor, onMeetingsChange }) {
+  useLang();
   const [meetings, setMeetings] = useState([]);
   const [types, setTypes] = useState(MEETING_TYPES);
   const [loaded, setLoaded] = useState(false);
@@ -165,7 +181,7 @@ export default function Meetings({ persons = [], categories = [], profile = "", 
   function mutate(fn) {
     setMeetings((prev) => {
       const next = fn(prev);
-      saveMeetings(next).then((ok) => { if (!ok) flash("Speichern fehlgeschlagen – evtl. zu große Anhänge."); });
+      saveMeetings(next).then((ok) => { if (!ok) flash(L("Speichern fehlgeschlagen – evtl. zu große Anhänge.", "Save failed – attachments may be too large.")); });
       if (onMeetingsChange) onMeetingsChange(next); // Export-Tab (App) live aktuell halten
       return next;
     });
@@ -177,9 +193,9 @@ export default function Meetings({ persons = [], categories = [], profile = "", 
       const updated = { ...m, archived: m.status === "Archiviert" ? true : m.archived, updatedAt: now };
       return exists ? prev.map((x) => (x.id === m.id ? updated : x)) : [{ ...updated, createdAt: now }, ...prev];
     });
-    setEditing(null); flash("Meeting gespeichert.");
+    setEditing(null); flash(L("Meeting gespeichert.", "Meeting saved."));
   }
-  function removeMeeting(id) { mutate((prev) => prev.filter((x) => x.id !== id)); setConfirmDel(null); flash("Meeting gelöscht."); }
+  function removeMeeting(id) { mutate((prev) => prev.filter((x) => x.id !== id)); setConfirmDel(null); flash(L("Meeting gelöscht.", "Meeting deleted.")); }
   function toggleFav(id) { mutate((prev) => prev.map((x) => (x.id === id ? { ...x, favorite: !x.favorite } : x))); }
   function toggleArchive(id) { mutate((prev) => prev.map((x) => (x.id === id ? { ...x, archived: !x.archived } : x))); }
 
@@ -211,72 +227,72 @@ export default function Meetings({ persons = [], categories = [], profile = "", 
       <div className="mm-wrap">
         <div className="mm-head">
           <h2><Plane size={18} strokeWidth={2.2} /> Meeting Minutes</h2>
-          <button className="mm-btn primary" onClick={() => setEditing(blankMeeting(profile))}><Plus size={15} /> Neues Meeting</button>
+          <button className="mm-btn primary" onClick={() => setEditing(blankMeeting(profile))}><Plus size={15} /> {L("Neues Meeting", "New meeting")}</button>
         </div>
 
         <div className="mm-controls">
           <div className="mm-search"><Search size={15} />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Meeting, Projekt, Teilnehmer suchen …" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={L("Meeting, Projekt, Teilnehmer suchen …", "Search meeting, project, participant …")} />
             {search && <button className="mm-x" onClick={() => setSearch("")}><X size={14} /></button>}
           </div>
-          <div className="mm-fg"><span>Typ</span>
+          <div className="mm-fg"><span>{L("Typ", "Type")}</span>
             <select value={fType} onChange={(e) => setFType(e.target.value)}>
-              <option value="all">Alle Typen</option>{types.slice().sort((a, b) => a.localeCompare(b, "de")).map((t) => <option key={t} value={t}>{t}</option>)}
+              <option value="all">{L("Alle Typen", "All types")}</option>{types.slice().sort((a, b) => a.localeCompare(b, "de")).map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
-            <button className="mm-gear" onClick={() => setMgrOpen(true)} title="Typen verwalten"><Settings size={13} /></button>
+            <button className="mm-gear" onClick={() => setMgrOpen(true)} title={L("Typen verwalten", "Manage types")}><Settings size={13} /></button>
           </div>
-          <div className="mm-fg"><span>Status</span>
+          <div className="mm-fg"><span>{L("Status", "Status")}</span>
             <select value={fStatus} onChange={(e) => setFStatus(e.target.value)}>
-              <option value="all">Alle Status</option>{MEETING_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
+              <option value="all">{L("Alle Status", "All statuses")}</option>{MEETING_STATUS.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
             </select>
           </div>
-          <div className="mm-fg"><span>Von</span><input type="date" value={fFrom} onChange={(e) => setFFrom(e.target.value)} /></div>
-          <div className="mm-fg"><span>Bis</span><input type="date" value={fTo} onChange={(e) => setFTo(e.target.value)} /></div>
-          {(fFrom || fTo) && <button className="mm-x" onClick={() => { setFFrom(""); setFTo(""); }} title="Datumsfilter zurücksetzen"><X size={14} /></button>}
-          <div className="mm-fg"><span>Sortieren</span>
+          <div className="mm-fg"><span>{L("Von", "From")}</span><input type="date" value={fFrom} onChange={(e) => setFFrom(e.target.value)} /></div>
+          <div className="mm-fg"><span>{L("Bis", "To")}</span><input type="date" value={fTo} onChange={(e) => setFTo(e.target.value)} /></div>
+          {(fFrom || fTo) && <button className="mm-x" onClick={() => { setFFrom(""); setFTo(""); }} title={L("Datumsfilter zurücksetzen", "Reset date filter")}><X size={14} /></button>}
+          <div className="mm-fg"><span>{L("Sortieren", "Sort")}</span>
             <select value={sortDir} onChange={(e) => setSortDir(e.target.value)}>
-              <option value="desc">Neueste zuerst</option><option value="asc">Älteste zuerst</option>
+              <option value="desc">{L("Neueste zuerst", "Newest first")}</option><option value="asc">{L("Älteste zuerst", "Oldest first")}</option>
             </select>
           </div>
-          <button className={"mm-toggle" + (favOnly ? " on" : "")} onClick={() => setFavOnly((v) => !v)}><Star size={14} /> Favoriten</button>
-          <button className={"mm-toggle" + (showArchive ? " on" : "")} onClick={() => setShowArchive((v) => !v)}><Archive size={14} /> {showArchive ? "Archiv" : "Aktiv"}</button>
+          <button className={"mm-toggle" + (favOnly ? " on" : "")} onClick={() => setFavOnly((v) => !v)}><Star size={14} /> {L("Favoriten", "Favorites")}</button>
+          <button className={"mm-toggle" + (showArchive ? " on" : "")} onClick={() => setShowArchive((v) => !v)}><Archive size={14} /> {showArchive ? L("Archiv", "Archive") : L("Aktiv", "Active")}</button>
           <div className="mm-layout">
-            <button className={layout === "list" ? "on" : ""} onClick={() => setLayout("list")} title="Liste"><List size={15} /> Liste</button>
-            <button className={layout === "cards" ? "on" : ""} onClick={() => setLayout("cards")} title="Karten"><SquareIcon size={15} /> Karten</button>
+            <button className={layout === "list" ? "on" : ""} onClick={() => setLayout("list")} title={L("Liste", "List")}><List size={15} /> {L("Liste", "List")}</button>
+            <button className={layout === "cards" ? "on" : ""} onClick={() => setLayout("cards")} title={L("Karten", "Cards")}><SquareIcon size={15} /> {L("Karten", "Cards")}</button>
           </div>
         </div>
 
-        {!loaded && <div className="mm-empty">Meetings werden geladen …</div>}
+        {!loaded && <div className="mm-empty">{L("Meetings werden geladen …", "Loading meetings …")}</div>}
         {loaded && filtered.length === 0 && (
-          <div className="mm-empty">{search || favOnly || fType !== "all" || fStatus !== "all" ? "Keine Treffer." : showArchive ? "Kein archiviertes Meeting." : "Noch keine Meetings – oben „Neues Meeting“ anlegen."}</div>
+          <div className="mm-empty">{search || favOnly || fType !== "all" || fStatus !== "all" ? L("Keine Treffer.", "No matches.") : showArchive ? L("Kein archiviertes Meeting.", "No archived meeting.") : L("Noch keine Meetings – oben „Neues Meeting“ anlegen.", "No meetings yet – create one with “New meeting” above.")}</div>
         )}
 
         <div className={layout === "cards" ? "mm-cards" : "mm-list"}>
           {filtered.map((m) => (
             <div key={m.id} className={"mm-item" + (layout === "cards" ? " card" : "")} style={{ borderLeftColor: STATUS_COLOR[m.status] || C.cool }}>
-              <button className={"mm-star" + (m.favorite ? " on" : "")} onClick={() => toggleFav(m.id)} title="Favorit"><Star size={16} /></button>
+              <button className={"mm-star" + (m.favorite ? " on" : "")} onClick={() => toggleFav(m.id)} title={L("Favorit", "Favorite")}><Star size={16} /></button>
               <div className="mm-item-main" onClick={() => setEditing(m)}>
-                <div className="mm-item-title">{m.title || "(ohne Titel)"}</div>
+                <div className="mm-item-title">{m.title || L("(ohne Titel)", "(no title)")}</div>
                 <div className="mm-item-meta">
                   <span>{fmtDay(m.date)}{m.start ? " · " + m.start : ""}</span>
                   <span className="mm-type">{m.type}</span>
-                  <span className="mm-status" style={{ color: STATUS_COLOR[m.status] }}>{m.status}</span>
+                  <span className="mm-status" style={{ color: STATUS_COLOR[m.status] }}>{statusLabel(m.status)}</span>
                   {m.project && <span>· {m.project}</span>}
                 </div>
                 <div className="mm-item-sub">
                   <span><Users size={12} /> {(m.participants || []).length}</span>
-                  {(m.agenda || []).length > 0 && <span>· {m.agenda.length} Agenda</span>}
-                  {(m.actionItems || []).length > 0 && <span>· {m.actionItems.length} Aufgaben</span>}
+                  {(m.agenda || []).length > 0 && <span>· {m.agenda.length} {L("Agenda", "Agenda")}</span>}
+                  {(m.actionItems || []).length > 0 && <span>· {m.actionItems.length} {L("Aufgaben", "Tasks")}</span>}
                   {(m.attachments || []).length + (m.images || []).length > 0 && <span><Paperclip size={12} /> {(m.attachments || []).length + (m.images || []).length}</span>}
                 </div>
               </div>
               <div className="mm-item-actions">
-                <button className="mm-ic" onClick={() => setEditing(m)} title="Öffnen"><Pencil size={15} /></button>
-                <button className="mm-ic" onClick={() => toggleArchive(m.id)} title={m.archived ? "Aus Archiv" : "Archivieren"}><Archive size={15} /></button>
+                <button className="mm-ic" onClick={() => setEditing(m)} title={L("Öffnen", "Open")}><Pencil size={15} /></button>
+                <button className="mm-ic" onClick={() => toggleArchive(m.id)} title={m.archived ? L("Aus Archiv", "Unarchive") : L("Archivieren", "Archive")}><Archive size={15} /></button>
                 {confirmDel === m.id ? (
-                  <button className="mm-ic del" onClick={() => removeMeeting(m.id)}>Löschen?</button>
+                  <button className="mm-ic del" onClick={() => removeMeeting(m.id)}>{L("Löschen?", "Delete?")}</button>
                 ) : (
-                  <button className="mm-ic" onClick={() => setConfirmDel(m.id)} title="Löschen"><Trash2 size={15} /></button>
+                  <button className="mm-ic" onClick={() => setConfirmDel(m.id)} title={L("Löschen", "Delete")}><Trash2 size={15} /></button>
                 )}
               </div>
             </div>
@@ -293,6 +309,7 @@ export default function Meetings({ persons = [], categories = [], profile = "", 
 //  Editor
 // ===========================================================================
 function MeetingEditor({ meeting, persons, categories, profile, types = MEETING_TYPES, onManageTypes, companyColor, onCreateTask, onSave, onCancel, flash }) {
+  useLang();
   const [m, setM] = useState(meeting);
   const [openAgenda, setOpenAgenda] = useState({});
   const [recording, setRecording] = useState(false);
@@ -330,18 +347,18 @@ function MeetingEditor({ meeting, persons, categories, profile, types = MEETING_
   function updActionItem(id, patch) { set("actionItems", (m.actionItems || []).map((a) => (a.id === id ? { ...a, ...patch } : a))); }
   function delActionItem(id) { set("actionItems", (m.actionItems || []).filter((a) => a.id !== id)); }
   function makeTask(item) {
-    if (!item.text.trim()) { flash("Bitte zuerst einen Text eingeben."); return; }
+    if (!item.text.trim()) { flash(L("Bitte zuerst einen Text eingeben.", "Please enter some text first.")); return; }
     if (!onCreateTask) return;
-    const id = onCreateTask({ title: item.text.trim(), notes: "Aus Meeting: " + (m.title || fmtDay(m.date)) });
+    const id = onCreateTask({ title: item.text.trim(), notes: L("Aus Meeting: ", "From meeting: ") + (m.title || fmtDay(m.date)) });
     updActionItem(item.id, { taskId: id || true });
-    flash("Aufgabe erstellt.");
+    flash(L("Aufgabe erstellt.", "Task created."));
   }
   function taskFromAgenda(a) {
     if (!onCreateTask) return;
     const note = htmlToPlain(a.notesHtml);
-    onCreateTask({ title: a.title || "Agenda-Punkt", notes: ("Aus Meeting: " + (m.title || fmtDay(m.date)) + (note ? "\n" + note : "")).slice(0, 2000) });
+    onCreateTask({ title: a.title || L("Agenda-Punkt", "Agenda item"), notes: (L("Aus Meeting: ", "From meeting: ") + (m.title || fmtDay(m.date)) + (note ? "\n" + note : "")).slice(0, 2000) });
     addActionItem(a.title);
-    flash("Aufgabe aus Agenda-Punkt erstellt.");
+    flash(L("Aufgabe aus Agenda-Punkt erstellt.", "Task created from agenda item."));
   }
 
   // ---- Dateien / Bilder / Audio ----
@@ -349,12 +366,12 @@ function MeetingEditor({ meeting, persons, categories, profile, types = MEETING_
     const files = Array.from(e.target.files || []); e.target.value = "";
     let added = 0;
     for (const f of files) {
-      if (f.size > 3 * 1024 * 1024) { flash(`„${f.name}“ > 3 MB – übersprungen.`); continue; }
+      if (f.size > 3 * 1024 * 1024) { flash(L(`„${f.name}“ > 3 MB – übersprungen.`, `“${f.name}” > 3 MB – skipped.`)); continue; }
       const dataUrl = await fileToDataUrl(f);
       setM((p) => ({ ...p, attachments: [...(p.attachments || []), { id: uid(), name: f.name, type: f.type, size: f.size, dataUrl }] }));
       added++;
     }
-    if (added) flash(added + (added === 1 ? " Anhang" : " Anhänge") + " hinzugefügt.");
+    if (added) flash(L(added + (added === 1 ? " Anhang" : " Anhänge") + " hinzugefügt.", added + (added === 1 ? " attachment" : " attachments") + " added."));
   }
   async function onImages(e) {
     const files = Array.from(e.target.files || []); e.target.value = "";
@@ -362,9 +379,9 @@ function MeetingEditor({ meeting, persons, categories, profile, types = MEETING_
     for (const f of files) {
       const dataUrl = await compressImage(f);
       if (dataUrl) { setM((p) => ({ ...p, images: [...(p.images || []), { id: uid(), name: f.name, dataUrl }] })); added++; }
-      else flash(`„${f.name}“ konnte nicht verarbeitet werden.`);
+      else flash(L(`„${f.name}“ konnte nicht verarbeitet werden.`, `“${f.name}” could not be processed.`));
     }
-    if (added) flash(added + (added === 1 ? " Bild" : " Bilder") + " gespeichert.");
+    if (added) flash(L(added + (added === 1 ? " Bild" : " Bilder") + " gespeichert.", added + (added === 1 ? " image" : " images") + " saved."));
   }
   function removeAtt(field, id) { set(field, (m[field] || []).filter((x) => x.id !== id)); }
 
@@ -375,12 +392,12 @@ function MeetingEditor({ meeting, persons, categories, profile, types = MEETING_
       mr.ondataavailable = (e) => e.data && e.data.size && chunks.push(e.data);
       mr.onstop = async () => {
         const blob = new Blob(chunks, { type: mr.mimeType || "audio/webm" });
-        if (blob.size > 3 * 1024 * 1024) { flash("Aufnahme > 3 MB – verworfen."); }
-        else { const dataUrl = await fileToDataUrl(blob); setM((p) => ({ ...p, voice: [...(p.voice || []), { id: uid(), name: "Sprachmemo " + new Date().toLocaleTimeString("de-DE"), dataUrl }] })); }
+        if (blob.size > 3 * 1024 * 1024) { flash(L("Aufnahme > 3 MB – verworfen.", "Recording > 3 MB – discarded.")); }
+        else { const dataUrl = await fileToDataUrl(blob); setM((p) => ({ ...p, voice: [...(p.voice || []), { id: uid(), name: L("Sprachmemo ", "Voice memo ") + new Date().toLocaleTimeString(getLang() === "en" ? "en-GB" : "de-DE"), dataUrl }] })); }
         stream.getTracks().forEach((t) => t.stop());
       };
       mr.start(); recRef.current = mr; setRecording(true);
-    } catch { flash("Mikrofon nicht verfügbar."); }
+    } catch { flash(L("Mikrofon nicht verfügbar.", "Microphone not available.")); }
   }
   function stopRec() { if (recRef.current) { recRef.current.stop(); setRecording(false); } }
 
@@ -389,75 +406,75 @@ function MeetingEditor({ meeting, persons, categories, profile, types = MEETING_
   return (
     <div className="mm-wrap mm-editor">
       <div className="mm-ehead">
-        <button className="mm-btn ghost" onClick={onCancel}><X size={15} /> Zurück</button>
-        <div className="mm-ehead-title">{meeting.title || "Neues Meeting"}</div>
+        <button className="mm-btn ghost" onClick={onCancel}><X size={15} /> {L("Zurück", "Back")}</button>
+        <div className="mm-ehead-title">{meeting.title || L("Neues Meeting", "New meeting")}</div>
         <div className="mm-ehead-actions">
           <button className="mm-btn ghost" onClick={() => set("favorite", !m.favorite)}><Star size={15} style={{ color: m.favorite ? C.burgundy : C.cool, fill: m.favorite ? C.burgundy : "none" }} /></button>
-          <button className="mm-btn primary" onClick={() => onSave(m)}><Check size={15} /> Speichern</button>
+          <button className="mm-btn primary" onClick={() => onSave(m)}><Check size={15} /> {L("Speichern", "Save")}</button>
         </div>
       </div>
 
       {/* Allgemein */}
-      <Section title="Allgemein">
+      <Section title={L("Allgemein", "General")}>
         <div className="mm-grid">
-          <F label="Titel" wide><input value={m.title} onChange={(e) => set("title", e.target.value)} placeholder="Meeting-Titel" /></F>
-          <F label="Projekt"><input value={m.project} onChange={(e) => set("project", e.target.value)} /></F>
-          <F label="Kategorie">
+          <F label={L("Titel", "Title")} wide><input value={m.title} onChange={(e) => set("title", e.target.value)} placeholder={L("Meeting-Titel", "Meeting title")} /></F>
+          <F label={L("Projekt", "Project")}><input value={m.project} onChange={(e) => set("project", e.target.value)} /></F>
+          <F label={L("Kategorie", "Category")}>
             <input list="mm-cats" value={m.category} onChange={(e) => set("category", e.target.value)} />
             <datalist id="mm-cats">{categories.map((c) => <option key={c} value={c} />)}</datalist>
           </F>
-          <F label="Meeting-Typ" action={onManageTypes && <button type="button" className="mm-link" onClick={onManageTypes}><Settings size={12} /> Verwalten</button>}>
+          <F label={L("Meeting-Typ", "Meeting type")} action={onManageTypes && <button type="button" className="mm-link" onClick={onManageTypes}><Settings size={12} /> {L("Verwalten", "Manage")}</button>}>
             <select value={m.type} onChange={(e) => set("type", e.target.value)}>
               {!types.includes(m.type) && m.type && <option value={m.type}>{m.type}</option>}
               {types.slice().sort((a, b) => a.localeCompare(b, "de")).map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
           </F>
-          <F label="Status"><select value={m.status} onChange={(e) => set("status", e.target.value)}>{MEETING_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}</select></F>
-          <F label="Datum"><input type="date" value={m.date} onChange={(e) => set("date", e.target.value)} /></F>
-          <F label="Beginn"><input type="time" value={m.start} onChange={(e) => set("start", e.target.value)} /></F>
-          <F label="Ende"><input type="time" value={m.end} onChange={(e) => set("end", e.target.value)} /></F>
-          <F label="Ort"><input value={m.location} onChange={(e) => set("location", e.target.value)} placeholder="Raum / Adresse" /></F>
-          <F label="Online-Link"><input value={m.onlineLink} onChange={(e) => set("onlineLink", e.target.value)} placeholder="https://…" /></F>
-          <F label="Organisator"><input list="mm-people" value={m.organizer} onChange={(e) => set("organizer", e.target.value)} placeholder="Kontakt wählen oder eintippen …" /></F>
-          <F label="Protokollführer"><input list="mm-people" value={m.recorder} onChange={(e) => set("recorder", e.target.value)} placeholder="Kontakt wählen oder eintippen …" /></F>
+          <F label={L("Status", "Status")}><select value={m.status} onChange={(e) => set("status", e.target.value)}>{MEETING_STATUS.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}</select></F>
+          <F label={L("Datum", "Date")}><input type="date" value={m.date} onChange={(e) => set("date", e.target.value)} /></F>
+          <F label={L("Beginn", "Start")}><input type="time" value={m.start} onChange={(e) => set("start", e.target.value)} /></F>
+          <F label={L("Ende", "End")}><input type="time" value={m.end} onChange={(e) => set("end", e.target.value)} /></F>
+          <F label={L("Ort", "Location")}><input value={m.location} onChange={(e) => set("location", e.target.value)} placeholder={L("Raum / Adresse", "Room / address")} /></F>
+          <F label={L("Online-Link", "Online link")}><input value={m.onlineLink} onChange={(e) => set("onlineLink", e.target.value)} placeholder="https://…" /></F>
+          <F label={L("Organisator", "Organizer")}><input list="mm-people" value={m.organizer} onChange={(e) => set("organizer", e.target.value)} placeholder={L("Kontakt wählen oder eintippen …", "Pick or type a contact …")} /></F>
+          <F label={L("Protokollführer", "Minute taker")}><input list="mm-people" value={m.recorder} onChange={(e) => set("recorder", e.target.value)} placeholder={L("Kontakt wählen oder eintippen …", "Pick or type a contact …")} /></F>
         </div>
       </Section>
 
       {/* Teilnehmer */}
-      <Section title="Teilnehmer">
-        <ParticipantPicker label="Teilnehmer" field="participants" list={m.participants} persons={sortedPersons}
+      <Section title={L("Teilnehmer", "Participants")}>
+        <ParticipantPicker label={L("Teilnehmer", "Participants")} field="participants" list={m.participants} persons={sortedPersons}
           onAdd={addParticipant} onRemove={removeParticipant} companyColor={companyColor} />
-        <ParticipantPicker label="Abwesend" field="absentees" list={m.absentees} persons={sortedPersons}
+        <ParticipantPicker label={L("Abwesend", "Absent")} field="absentees" list={m.absentees} persons={sortedPersons}
           onAdd={addParticipant} onRemove={removeParticipant} companyColor={companyColor} muted />
-        {persons.length === 0 && <p className="mm-hint">Noch keine Kontakte – lege im Tab „Persons“ Personen an, dann erscheinen sie hier.</p>}
+        {persons.length === 0 && <p className="mm-hint">{L("Noch keine Kontakte – lege im Tab „Persons“ Personen an, dann erscheinen sie hier.", "No contacts yet – add people in the “Persons” tab and they will appear here.")}</p>}
       </Section>
 
       {/* Agenda & Mitschrift */}
-      <Section title="Agenda & Mitschrift" action={<button className="mm-btn out" onClick={addAgenda}><Plus size={14} /> Punkt</button>}>
-        {(m.agenda || []).length === 0 && <p className="mm-hint">Noch keine Agenda-Punkte.</p>}
+      <Section title={L("Agenda & Mitschrift", "Agenda & minutes")} action={<button className="mm-btn out" onClick={addAgenda}><Plus size={14} /> {L("Punkt", "Item")}</button>}>
+        {(m.agenda || []).length === 0 && <p className="mm-hint">{L("Noch keine Agenda-Punkte.", "No agenda items yet.")}</p>}
         {(m.agenda || []).map((a, i) => {
           const open = openAgenda[a.id];
           return (
             <div key={a.id} className="mm-agenda">
               <div className="mm-agenda-head">
                 <span className="mm-num">{i + 1}</span>
-                <input className="mm-agenda-title" value={a.title} onChange={(e) => updAgenda(a.id, { title: e.target.value })} placeholder="Agenda-Punkt" />
-                <label className="mm-done" title="Erledigt"><input type="checkbox" checked={!!a.done} onChange={(e) => updAgenda(a.id, { done: e.target.checked })} /></label>
+                <input className="mm-agenda-title" value={a.title} onChange={(e) => updAgenda(a.id, { title: e.target.value })} placeholder={L("Agenda-Punkt", "Agenda item")} />
+                <label className="mm-done" title={L("Erledigt", "Done")}><input type="checkbox" checked={!!a.done} onChange={(e) => updAgenda(a.id, { done: e.target.checked })} /></label>
                 <button className="mm-ic" onClick={() => setOpenAgenda((o) => ({ ...o, [a.id]: !o[a.id] }))}>{open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</button>
                 <button className="mm-ic" onClick={() => delAgenda(a.id)}><X size={16} /></button>
               </div>
               {open && (
                 <div className="mm-agenda-body">
-                  <F label="Beschreibung"><textarea rows={2} value={a.desc} onChange={(e) => updAgenda(a.id, { desc: e.target.value })} /></F>
-                  <div className="mm-sub">Notizen</div>
-                  <RichText key={a.id + "-n"} value={a.notesHtml} onChange={(v) => updAgenda(a.id, { notesHtml: v })} placeholder="Mitschrift … (Fett, Kursiv, Listen, Checkboxen, Tabellen, Links)" />
+                  <F label={L("Beschreibung", "Description")}><textarea rows={2} value={a.desc} onChange={(e) => updAgenda(a.id, { desc: e.target.value })} /></F>
+                  <div className="mm-sub">{L("Notizen", "Notes")}</div>
+                  <RichText key={a.id + "-n"} value={a.notesHtml} onChange={(v) => updAgenda(a.id, { notesHtml: v })} placeholder={L("Mitschrift … (Fett, Kursiv, Listen, Checkboxen, Tabellen, Links)", "Minutes … (bold, italic, lists, checkboxes, tables, links)")} />
                   <div className="mm-grid2">
-                    <F label="Entscheidungen"><textarea rows={2} value={a.decisions} onChange={(e) => updAgenda(a.id, { decisions: e.target.value })} /></F>
-                    <F label="Diskussion"><textarea rows={2} value={a.discussion} onChange={(e) => updAgenda(a.id, { discussion: e.target.value })} /></F>
-                    <F label="Risiken"><textarea rows={2} value={a.risks} onChange={(e) => updAgenda(a.id, { risks: e.target.value })} /></F>
-                    <F label="Offene Fragen"><textarea rows={2} value={a.openQuestions} onChange={(e) => updAgenda(a.id, { openQuestions: e.target.value })} /></F>
+                    <F label={L("Entscheidungen", "Decisions")}><textarea rows={2} value={a.decisions} onChange={(e) => updAgenda(a.id, { decisions: e.target.value })} /></F>
+                    <F label={L("Diskussion", "Discussion")}><textarea rows={2} value={a.discussion} onChange={(e) => updAgenda(a.id, { discussion: e.target.value })} /></F>
+                    <F label={L("Risiken", "Risks")}><textarea rows={2} value={a.risks} onChange={(e) => updAgenda(a.id, { risks: e.target.value })} /></F>
+                    <F label={L("Offene Fragen", "Open questions")}><textarea rows={2} value={a.openQuestions} onChange={(e) => updAgenda(a.id, { openQuestions: e.target.value })} /></F>
                   </div>
-                  <button className="mm-btn out sm" onClick={() => taskFromAgenda(a)}><Plus size={13} /> Aufgabe aus diesem Punkt</button>
+                  <button className="mm-btn out sm" onClick={() => taskFromAgenda(a)}><Plus size={13} /> {L("Aufgabe aus diesem Punkt", "Task from this item")}</button>
                 </div>
               )}
             </div>
@@ -466,16 +483,16 @@ function MeetingEditor({ meeting, persons, categories, profile, types = MEETING_
       </Section>
 
       {/* Entscheidungen */}
-      <Section title="Entscheidungen" action={<button className="mm-btn out" onClick={addDecision}><Plus size={14} /> Entscheidung</button>}>
-        {(m.decisions || []).length === 0 && <p className="mm-hint">Noch keine Entscheidungen.</p>}
+      <Section title={L("Entscheidungen", "Decisions")} action={<button className="mm-btn out" onClick={addDecision}><Plus size={14} /> {L("Entscheidung", "Decision")}</button>}>
+        {(m.decisions || []).length === 0 && <p className="mm-hint">{L("Noch keine Entscheidungen.", "No decisions yet.")}</p>}
         {(m.decisions || []).map((d) => (
           <div key={d.id} className="mm-row-card">
             <div className="mm-grid2">
-              <F label="Titel" wide><input value={d.title} onChange={(e) => updDecision(d.id, { title: e.target.value })} /></F>
-              <F label="Verantwortlicher"><input list="mm-people" value={d.owner} onChange={(e) => updDecision(d.id, { owner: e.target.value })} /></F>
-              <F label="Datum"><input type="date" value={d.date} onChange={(e) => updDecision(d.id, { date: e.target.value })} /></F>
-              <F label="Status"><select value={d.status} onChange={(e) => updDecision(d.id, { status: e.target.value })}>{DECISION_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}</select></F>
-              <F label="Beschreibung" wide><textarea rows={2} value={d.desc} onChange={(e) => updDecision(d.id, { desc: e.target.value })} /></F>
+              <F label={L("Titel", "Title")} wide><input value={d.title} onChange={(e) => updDecision(d.id, { title: e.target.value })} /></F>
+              <F label={L("Verantwortlicher", "Responsible")}><input list="mm-people" value={d.owner} onChange={(e) => updDecision(d.id, { owner: e.target.value })} /></F>
+              <F label={L("Datum", "Date")}><input type="date" value={d.date} onChange={(e) => updDecision(d.id, { date: e.target.value })} /></F>
+              <F label={L("Status", "Status")}><select value={d.status} onChange={(e) => updDecision(d.id, { status: e.target.value })}>{DECISION_STATUS.map((s) => <option key={s} value={s}>{decisionStatusLabel(s)}</option>)}</select></F>
+              <F label={L("Beschreibung", "Description")} wide><textarea rows={2} value={d.desc} onChange={(e) => updDecision(d.id, { desc: e.target.value })} /></F>
             </div>
             <button className="mm-ic abs" onClick={() => delDecision(d.id)}><X size={15} /></button>
           </div>
@@ -484,26 +501,26 @@ function MeetingEditor({ meeting, persons, categories, profile, types = MEETING_
       </Section>
 
       {/* Action Items */}
-      <Section title="Action Items (Aufgaben)" action={<button className="mm-btn out" onClick={() => addActionItem()}><Plus size={14} /> Item</button>}>
-        {(m.actionItems || []).length === 0 && <p className="mm-hint">Aus Notizen direkt Aufgaben erstellen.</p>}
+      <Section title={L("Action Items (Aufgaben)", "Action items (tasks)")} action={<button className="mm-btn out" onClick={() => addActionItem()}><Plus size={14} /> {L("Item", "Item")}</button>}>
+        {(m.actionItems || []).length === 0 && <p className="mm-hint">{L("Aus Notizen direkt Aufgaben erstellen.", "Create tasks directly from notes.")}</p>}
         {(m.actionItems || []).map((a) => (
           <div key={a.id} className="mm-action">
-            <input value={a.text} onChange={(e) => updActionItem(a.id, { text: e.target.value })} placeholder="Was ist zu tun?" />
-            {a.taskId ? <span className="mm-tag ok"><Check size={13} /> Aufgabe</span>
-              : <button className="mm-btn out sm" onClick={() => makeTask(a)}><Plus size={13} /> Als Aufgabe</button>}
+            <input value={a.text} onChange={(e) => updActionItem(a.id, { text: e.target.value })} placeholder={L("Was ist zu tun?", "What needs to be done?")} />
+            {a.taskId ? <span className="mm-tag ok"><Check size={13} /> {L("Aufgabe", "Task")}</span>
+              : <button className="mm-btn out sm" onClick={() => makeTask(a)}><Plus size={13} /> {L("Als Aufgabe", "As task")}</button>}
             <button className="mm-ic" onClick={() => delActionItem(a.id)}><X size={15} /></button>
           </div>
         ))}
       </Section>
 
       {/* Anhänge / Bilder / Sprachmemos */}
-      <Section title="Anhänge, Bilder & Sprachmemos">
+      <Section title={L("Anhänge, Bilder & Sprachmemos", "Attachments, images & voice memos")}>
         <div className="mm-attbar">
-          <label className="mm-btn out"><Paperclip size={14} /> Datei <input type="file" hidden multiple onChange={onFiles} /></label>
-          <label className="mm-btn out"><ImageIcon size={14} /> Bild <input type="file" hidden accept="image/*" multiple onChange={onImages} /></label>
-          {!recording ? <button className="mm-btn out" onClick={startRec}><Mic size={14} /> Aufnehmen</button>
-            : <button className="mm-btn rec" onClick={stopRec}><SquareIcon size={14} /> Stop</button>}
-          <span className="mm-hint">max. 3 MB pro Datei</span>
+          <label className="mm-btn out"><Paperclip size={14} /> {L("Datei", "File")} <input type="file" hidden multiple onChange={onFiles} /></label>
+          <label className="mm-btn out"><ImageIcon size={14} /> {L("Bild", "Image")} <input type="file" hidden accept="image/*" multiple onChange={onImages} /></label>
+          {!recording ? <button className="mm-btn out" onClick={startRec}><Mic size={14} /> {L("Aufnehmen", "Record")}</button>
+            : <button className="mm-btn rec" onClick={stopRec}><SquareIcon size={14} /> {L("Stop", "Stop")}</button>}
+          <span className="mm-hint">{L("max. 3 MB pro Datei", "max. 3 MB per file")}</span>
         </div>
         {(m.images || []).length > 0 && (
           <div className="mm-thumbs">
@@ -531,19 +548,19 @@ function MeetingEditor({ meeting, persons, categories, profile, types = MEETING_
       </Section>
 
       {/* Offene Punkte & nächstes Meeting */}
-      <Section title="Offene Punkte & nächstes Meeting">
-        <F label="Offene Punkte" wide><textarea rows={3} value={m.openPoints} onChange={(e) => set("openPoints", e.target.value)} placeholder="Themen, die offen bleiben …" /></F>
+      <Section title={L("Offene Punkte & nächstes Meeting", "Open points & next meeting")}>
+        <F label={L("Offene Punkte", "Open points")} wide><textarea rows={3} value={m.openPoints} onChange={(e) => set("openPoints", e.target.value)} placeholder={L("Themen, die offen bleiben …", "Topics that remain open …")} /></F>
         <div className="mm-grid2">
-          <F label="Nächstes Meeting – Datum"><input type="date" value={m.nextMeeting?.date || ""} onChange={(e) => set("nextMeeting", { ...m.nextMeeting, date: e.target.value })} /></F>
-          <F label="Notiz"><input value={m.nextMeeting?.note || ""} onChange={(e) => set("nextMeeting", { ...m.nextMeeting, note: e.target.value })} /></F>
+          <F label={L("Nächstes Meeting – Datum", "Next meeting – date")}><input type="date" value={m.nextMeeting?.date || ""} onChange={(e) => set("nextMeeting", { ...m.nextMeeting, date: e.target.value })} /></F>
+          <F label={L("Notiz", "Note")}><input value={m.nextMeeting?.note || ""} onChange={(e) => set("nextMeeting", { ...m.nextMeeting, note: e.target.value })} /></F>
         </div>
       </Section>
 
-      <p className="mm-hint">Export & Druck (PDF, Word, Markdown, TXT) findest du gesammelt im Tab „Druck & Export" – nach dem Speichern.</p>
+      <p className="mm-hint">{L("Export & Druck (PDF, Word, Markdown, TXT) findest du gesammelt im Tab „Druck & Export\" – nach dem Speichern.", "Export & print (PDF, Word, Markdown, TXT) are bundled in the “Print & Export” tab – after saving.")}</p>
 
       <div className="mm-ebottom">
-        <button className="mm-btn ghost" onClick={onCancel}>Abbrechen</button>
-        <button className="mm-btn primary" onClick={() => onSave(m)}><Check size={15} /> Speichern</button>
+        <button className="mm-btn ghost" onClick={onCancel}>{L("Abbrechen", "Cancel")}</button>
+        <button className="mm-btn primary" onClick={() => onSave(m)}><Check size={15} /> {L("Speichern", "Save")}</button>
       </div>
     </div>
   );
@@ -567,6 +584,7 @@ function F({ label, wide, action, children }) {
   );
 }
 function TypeManager({ types, onChange, onClose }) {
+  useLang();
   const [val, setVal] = useState("");
   function add() {
     const t = val.trim(); if (!t) return;
@@ -576,18 +594,18 @@ function TypeManager({ types, onChange, onClose }) {
   return (
     <div className="mm-modal-bg" onClick={onClose}>
       <div className="mm-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="mm-modal-head"><h3>Meeting-Typen verwalten</h3><button className="mm-ic" onClick={onClose}><X size={18} /></button></div>
+        <div className="mm-modal-head"><h3>{L("Meeting-Typen verwalten", "Manage meeting types")}</h3><button className="mm-ic" onClick={onClose}><X size={18} /></button></div>
         <div className="mm-addrow">
-          <input value={val} onChange={(e) => setVal(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} placeholder="Neuer Typ …" />
-          <button className="mm-btn primary" onClick={add}><Plus size={14} /> Hinzufügen</button>
+          <input value={val} onChange={(e) => setVal(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} placeholder={L("Neuer Typ …", "New type …")} />
+          <button className="mm-btn primary" onClick={add}><Plus size={14} /> {L("Hinzufügen", "Add")}</button>
         </div>
         <div className="mm-taglist">
           {types.slice().sort((a, b) => a.localeCompare(b, "de")).map((t) => (
-            <span key={t} className="mm-tagchip">{t}<button onClick={() => onChange(types.filter((x) => x !== t))} title="Entfernen"><X size={13} /></button></span>
+            <span key={t} className="mm-tagchip">{t}<button onClick={() => onChange(types.filter((x) => x !== t))} title={L("Entfernen", "Remove")}><X size={13} /></button></span>
           ))}
-          {types.length === 0 && <span className="mm-hint">Keine Typen – füge oben einen hinzu.</span>}
+          {types.length === 0 && <span className="mm-hint">{L("Keine Typen – füge oben einen hinzu.", "No types – add one above.")}</span>}
         </div>
-        <p className="mm-hint">Diese Typen erscheinen im Filter und beim Anlegen eines Meetings.</p>
+        <p className="mm-hint">{L("Diese Typen erscheinen im Filter und beim Anlegen eines Meetings.", "These types appear in the filter and when creating a meeting.")}</p>
       </div>
     </div>
   );
@@ -598,7 +616,7 @@ function ParticipantPicker({ label, field, list = [], persons, onAdd, onRemove, 
       <div className="mm-pp-head">
         <label>{label}</label>
         <select value="" onChange={(e) => { onAdd(field, e.target.value); e.target.value = ""; }}>
-          <option value="">+ hinzufügen …</option>
+          <option value="">{L("+ hinzufügen …", "+ add …")}</option>
           {persons.map((p) => <option key={p.id} value={p.id}>{p.name}{p.company ? " · " + p.company : ""}</option>)}
         </select>
       </div>
@@ -622,10 +640,10 @@ function ParticipantPicker({ label, field, list = [], persons, onAdd, onRemove, 
 // ===========================================================================
 function meetingMetaRows(m) {
   return [
-    ["Projekt", m.project], ["Kategorie", m.category], ["Typ", m.type], ["Status", m.status],
-    ["Datum", fmtDay(m.date)], ["Zeit", [m.start, m.end].filter(Boolean).join(" – ")],
-    ["Ort", m.location], ["Online", m.onlineLink],
-    ["Organisator", m.organizer], ["Protokollführer", m.recorder],
+    [L("Projekt", "Project"), m.project], [L("Kategorie", "Category"), m.category], [L("Typ", "Type"), m.type], [L("Status", "Status"), statusLabel(m.status)],
+    [L("Datum", "Date"), fmtDay(m.date)], [L("Zeit", "Time"), [m.start, m.end].filter(Boolean).join(" – ")],
+    [L("Ort", "Location"), m.location], [L("Online", "Online"), m.onlineLink],
+    [L("Organisator", "Organizer"), m.organizer], [L("Protokollführer", "Minute taker"), m.recorder],
   ].filter((r) => r[1]);
 }
 
@@ -651,39 +669,39 @@ export function enrichMeeting(m, persons = []) {
   return { ...m, participants: (m.participants || []).map(fill), absentees: (m.absentees || []).map(fill) };
 }
 export function meetingToMarkdown(m) {
-  const L = [];
-  L.push(`# Besprechungsprotokoll – ${m.title || ""}`.trim(), "");
-  meetingMetaRows(m).forEach(([k, v]) => L.push(`**${k}:** ${v}`));
-  L.push("");
-  if ((m.participants || []).length) { L.push("## Teilnehmer"); m.participants.forEach((p) => L.push(`- ${p.name}${p.company ? ` (${p.company})` : ""}${p.role ? `, ${p.role}` : ""}`)); L.push(""); }
-  if ((m.absentees || []).length) { L.push("## Abwesend"); m.absentees.forEach((p) => L.push(`- ${p.name}`)); L.push(""); }
+  const LINES = [];
+  LINES.push(`# ${L("Besprechungsprotokoll", "Meeting minutes")} – ${m.title || ""}`.trim(), "");
+  meetingMetaRows(m).forEach(([k, v]) => LINES.push(`**${k}:** ${v}`));
+  LINES.push("");
+  if ((m.participants || []).length) { LINES.push(`## ${L("Teilnehmer", "Participants")}`); m.participants.forEach((p) => LINES.push(`- ${p.name}${p.company ? ` (${p.company})` : ""}${p.role ? `, ${p.role}` : ""}`)); LINES.push(""); }
+  if ((m.absentees || []).length) { LINES.push(`## ${L("Abwesend", "Absent")}`); m.absentees.forEach((p) => LINES.push(`- ${p.name}`)); LINES.push(""); }
   if ((m.agenda || []).length) {
-    L.push("## Agenda & Mitschrift");
+    LINES.push(`## ${L("Agenda & Mitschrift", "Agenda & minutes")}`);
     m.agenda.forEach((a, i) => {
-      L.push(`### ${i + 1}. ${a.title || ""}${a.done ? " ✓" : ""}`);
-      if (a.desc) L.push(a.desc);
-      const notes = htmlToPlain(a.notesHtml); if (notes) L.push("", notes);
-      [["Entscheidungen", a.decisions], ["Diskussion", a.discussion], ["Risiken", a.risks], ["Offene Fragen", a.openQuestions]]
-        .filter((x) => x[1]).forEach(([k, v]) => L.push(`- **${k}:** ${v}`));
-      L.push("");
+      LINES.push(`### ${i + 1}. ${a.title || ""}${a.done ? " ✓" : ""}`);
+      if (a.desc) LINES.push(a.desc);
+      const notes = htmlToPlain(a.notesHtml); if (notes) LINES.push("", notes);
+      [[L("Entscheidungen", "Decisions"), a.decisions], [L("Diskussion", "Discussion"), a.discussion], [L("Risiken", "Risks"), a.risks], [L("Offene Fragen", "Open questions"), a.openQuestions]]
+        .filter((x) => x[1]).forEach(([k, v]) => LINES.push(`- **${k}:** ${v}`));
+      LINES.push("");
     });
   }
-  if ((m.decisions || []).length) { L.push("## Entscheidungen"); m.decisions.forEach((d) => L.push(`- **${d.title}** (${d.status}${d.owner ? ", " + d.owner : ""}${d.date ? ", " + fmtDay(d.date) : ""})${d.desc ? " – " + d.desc : ""}`)); L.push(""); }
-  if ((m.actionItems || []).length) { L.push("## Aufgaben"); m.actionItems.forEach((a) => L.push(`- [ ] ${a.text}`)); L.push(""); }
-  if (m.openPoints) { L.push("## Offene Punkte", m.openPoints, ""); }
-  if (m.nextMeeting && (m.nextMeeting.date || m.nextMeeting.note)) L.push(`## Nächstes Meeting`, `${fmtDay(m.nextMeeting.date)} ${m.nextMeeting.note || ""}`.trim(), "");
-  if ((m.images || []).length) { L.push("## Bilder"); m.images.forEach((im) => L.push(`- ${im.name || "Bild"}`)); L.push(""); }
-  if ((m.attachments || []).length) { L.push("## Anlagen"); m.attachments.forEach((f) => L.push(`- ${f.name}`)); L.push(""); }
-  if ((m.voice || []).length) { L.push("## Sprachmemos"); m.voice.forEach((v) => L.push(`- ${v.name}`)); L.push(""); }
-  L.push("", "© Copyright by Patrick Thorn");
-  return L.join("\n");
+  if ((m.decisions || []).length) { LINES.push(`## ${L("Entscheidungen", "Decisions")}`); m.decisions.forEach((d) => LINES.push(`- **${d.title}** (${decisionStatusLabel(d.status)}${d.owner ? ", " + d.owner : ""}${d.date ? ", " + fmtDay(d.date) : ""})${d.desc ? " – " + d.desc : ""}`)); LINES.push(""); }
+  if ((m.actionItems || []).length) { LINES.push(`## ${L("Aufgaben", "Tasks")}`); m.actionItems.forEach((a) => LINES.push(`- [ ] ${a.text}`)); LINES.push(""); }
+  if (m.openPoints) { LINES.push(`## ${L("Offene Punkte", "Open points")}`, m.openPoints, ""); }
+  if (m.nextMeeting && (m.nextMeeting.date || m.nextMeeting.note)) LINES.push(`## ${L("Nächstes Meeting", "Next meeting")}`, `${fmtDay(m.nextMeeting.date)} ${m.nextMeeting.note || ""}`.trim(), "");
+  if ((m.images || []).length) { LINES.push(`## ${L("Bilder", "Images")}`); m.images.forEach((im) => LINES.push(`- ${im.name || L("Bild", "Image")}`)); LINES.push(""); }
+  if ((m.attachments || []).length) { LINES.push(`## ${L("Anlagen", "Attachments")}`); m.attachments.forEach((f) => LINES.push(`- ${f.name}`)); LINES.push(""); }
+  if ((m.voice || []).length) { LINES.push(`## ${L("Sprachmemos", "Voice memos")}`); m.voice.forEach((v) => LINES.push(`- ${v.name}`)); LINES.push(""); }
+  LINES.push("", "© Copyright by Patrick Thorn");
+  return LINES.join("\n");
 }
 export function meetingToText(m) { return meetingToMarkdown(m).replace(/[#*>`]/g, "").replace(/\n{3,}/g, "\n\n").trim(); }
 
 function meetingHTML(m, forWord) {
   const esc = (s) => (s == null ? "" : String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"));
   const meta = meetingMetaRows(m).map(([k, v]) => {
-    const isLink = (k === "Online" || k === "Online-Link") && /^https?:\/\//i.test(v || "");
+    const isLink = /^https?:\/\//i.test(v || "");
     const cell = isLink ? `<a href="${esc(v)}">${esc(v)}</a>` : esc(v);
     return `<tr><td class="k">${esc(k)}</td><td>${cell}</td></tr>`;
   }).join("");
@@ -693,9 +711,9 @@ function meetingHTML(m, forWord) {
     <div class="ag"><h3>${i + 1}. ${esc(a.title)}${a.done ? " ✓" : ""}</h3>
     ${a.desc ? `<p class="muted">${esc(a.desc)}</p>` : ""}
     ${a.notesHtml ? `<div class="notes">${sanitizeHtml(a.notesHtml)}</div>` : ""}
-    ${[["Entscheidungen", a.decisions], ["Diskussion", a.discussion], ["Risiken", a.risks], ["Offene Fragen", a.openQuestions]].filter((x) => x[1]).map(([k, v]) => `<p><b>${k}:</b> ${esc(v)}</p>`).join("")}
+    ${[[L("Entscheidungen", "Decisions"), a.decisions], [L("Diskussion", "Discussion"), a.discussion], [L("Risiken", "Risks"), a.risks], [L("Offene Fragen", "Open questions"), a.openQuestions]].filter((x) => x[1]).map(([k, v]) => `<p><b>${k}:</b> ${esc(v)}</p>`).join("")}
     </div>`).join("");
-  const decisions = (m.decisions || []).map((d) => `<tr><td>${esc(d.title)}</td><td>${esc(d.owner)}</td><td>${esc(fmtDay(d.date))}</td><td>${esc(d.status)}</td></tr>`).join("");
+  const decisions = (m.decisions || []).map((d) => `<tr><td>${esc(d.title)}</td><td>${esc(d.owner)}</td><td>${esc(fmtDay(d.date))}</td><td>${esc(decisionStatusLabel(d.status))}</td></tr>`).join("");
   const actions = (m.actionItems || []).map((a) => `<li>☐ ${esc(a.text)}</li>`).join("");
   const imgs = (m.images || []).map((im) => `<a href="${im.dataUrl}" download="${esc(im.name) || "bild"}"><img class="ph" src="${im.dataUrl}" alt="${esc(im.name)}" /></a>`).join("");
   const att = (m.attachments || []).map((f) => `<li><a href="${f.dataUrl}" download="${esc(f.name) || "datei"}">${esc(f.name)}</a></li>`).join("");
@@ -722,28 +740,28 @@ function meetingHTML(m, forWord) {
     @media print{@page{margin:${forWord ? "14mm" : "0"};}}
   `;
   const planeSvg = `<svg class="logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>`;
-  return `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Protokoll ${esc(m.title)}</title>
+  return `<!doctype html><html lang="${getLang() === "en" ? "en" : "de"}"><head><meta charset="utf-8"><title>${L("Protokoll", "Minutes")} ${esc(m.title)}</title>
     <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700;900&display=swap" rel="stylesheet"><style>${style}</style></head>
     <body>
-    <div class="hd">${planeSvg}<div><h1>Besprechungsprotokoll</h1><div class="sub">${esc(m.title)} · ${esc(fmtDay(m.date))}</div></div></div>
-    <h2>Eckdaten</h2><table>${meta}</table>
-    ${parts ? `<h2>Teilnehmer</h2><ul>${parts}</ul>` : ""}
-    ${absent ? `<h2>Abwesend</h2><ul>${absent}</ul>` : ""}
-    ${agenda ? `<h2>Agenda & Mitschrift</h2>${agenda}` : ""}
-    ${decisions ? `<h2>Entscheidungen</h2><table><tr><th>Titel</th><th>Verantwortlich</th><th>Datum</th><th>Status</th></tr>${decisions}</table>` : ""}
-    ${actions ? `<h2>Aufgaben</h2><ul>${actions}</ul>` : ""}
-    ${m.openPoints ? `<h2>Offene Punkte</h2><p>${esc(m.openPoints)}</p>` : ""}
-    ${(m.nextMeeting && (m.nextMeeting.date || m.nextMeeting.note)) ? `<h2>Nächstes Meeting</h2><p>${esc(fmtDay(m.nextMeeting.date))} ${esc(m.nextMeeting.note)}</p>` : ""}
-    ${imgs ? `<h2>Bilder</h2>${imgs}` : ""}
-    ${att ? `<h2>Anlagen</h2><ul>${att}</ul>` : ""}
-    ${voc ? `<h2>Sprachmemos</h2><ul>${voc}</ul>` : ""}
-    <div class="sign"><div>Organisator${m.organizer ? " – " + esc(m.organizer) : ""}</div><div>Protokollführer${m.recorder ? " – " + esc(m.recorder) : ""}</div></div>
+    <div class="hd">${planeSvg}<div><h1>${L("Besprechungsprotokoll", "Meeting minutes")}</h1><div class="sub">${esc(m.title)} · ${esc(fmtDay(m.date))}</div></div></div>
+    <h2>${L("Eckdaten", "Key data")}</h2><table>${meta}</table>
+    ${parts ? `<h2>${L("Teilnehmer", "Participants")}</h2><ul>${parts}</ul>` : ""}
+    ${absent ? `<h2>${L("Abwesend", "Absent")}</h2><ul>${absent}</ul>` : ""}
+    ${agenda ? `<h2>${L("Agenda & Mitschrift", "Agenda & minutes")}</h2>${agenda}` : ""}
+    ${decisions ? `<h2>${L("Entscheidungen", "Decisions")}</h2><table><tr><th>${L("Titel", "Title")}</th><th>${L("Verantwortlich", "Responsible")}</th><th>${L("Datum", "Date")}</th><th>${L("Status", "Status")}</th></tr>${decisions}</table>` : ""}
+    ${actions ? `<h2>${L("Aufgaben", "Tasks")}</h2><ul>${actions}</ul>` : ""}
+    ${m.openPoints ? `<h2>${L("Offene Punkte", "Open points")}</h2><p>${esc(m.openPoints)}</p>` : ""}
+    ${(m.nextMeeting && (m.nextMeeting.date || m.nextMeeting.note)) ? `<h2>${L("Nächstes Meeting", "Next meeting")}</h2><p>${esc(fmtDay(m.nextMeeting.date))} ${esc(m.nextMeeting.note)}</p>` : ""}
+    ${imgs ? `<h2>${L("Bilder", "Images")}</h2>${imgs}` : ""}
+    ${att ? `<h2>${L("Anlagen", "Attachments")}</h2><ul>${att}</ul>` : ""}
+    ${voc ? `<h2>${L("Sprachmemos", "Voice memos")}</h2><ul>${voc}</ul>` : ""}
+    <div class="sign"><div>${L("Organisator", "Organizer")}${m.organizer ? " – " + esc(m.organizer) : ""}</div><div>${L("Protokollführer", "Minute taker")}${m.recorder ? " – " + esc(m.recorder) : ""}</div></div>
     <div class="cpr">© Copyright by Patrick Thorn</div>
     </body></html>`;
 }
 export function printMeeting(m) {
   const w = window.open("", "_blank");
-  if (!w) { alert("Bitte Pop-ups erlauben, um zu drucken."); return; }
+  if (!w) { alert(L("Bitte Pop-ups erlauben, um zu drucken.", "Please allow pop-ups to print.")); return; }
   w.document.write(meetingHTML(m));
   w.document.close(); w.focus();
   setTimeout(() => { try { w.print(); } catch {} }, 400);
@@ -760,30 +778,30 @@ export function meetingToEmailHtml(m) {
   const H = "margin:14px 0 4px;font-size:12px;color:#871C54;font-weight:bold;text-transform:uppercase;letter-spacing:.03em;";
   const o = [];
   o.push(`<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:13px;line-height:1.5;">`);
-  o.push(`<div style="font-size:18px;font-weight:bold;color:#871C54;">Besprechungsprotokoll</div>`);
+  o.push(`<div style="font-size:18px;font-weight:bold;color:#871C54;">${L("Besprechungsprotokoll", "Meeting minutes")}</div>`);
   if (m.title) o.push(`<div style="font-size:14px;font-weight:bold;margin-top:2px;">${esc(m.title)}</div>`);
-  o.push(`<div style="color:#6b7280;font-size:12px;margin-bottom:10px;">${esc(fmtDay(m.date))}${m.start ? " · " + esc(m.start) + (m.end ? "–" + esc(m.end) : "") : ""}${m.type ? " · " + esc(m.type) : ""}${m.status ? " · " + esc(m.status) : ""}</div>`);
-  const extra = meetingMetaRows(m).filter(([k]) => !["Datum", "Typ", "Status", "Zeit"].includes(k));
+  o.push(`<div style="color:#6b7280;font-size:12px;margin-bottom:10px;">${esc(fmtDay(m.date))}${m.start ? " · " + esc(m.start) + (m.end ? "–" + esc(m.end) : "") : ""}${m.type ? " · " + esc(m.type) : ""}${m.status ? " · " + esc(statusLabel(m.status)) : ""}</div>`);
+  const extra = meetingMetaRows(m).filter(([k]) => ![L("Datum", "Date"), L("Typ", "Type"), L("Status", "Status"), L("Zeit", "Time")].includes(k));
   if (extra.length) o.push(extra.map(([k, v]) => `<div style="${P}"><b>${esc(k)}:</b> ${esc(v)}</div>`).join(""));
-  if ((m.participants || []).length) o.push(`<div style="${H}">Teilnehmer</div><div style="${P}">${m.participants.map((p) => esc(p.name) + (p.company ? ` (${esc(p.company)})` : "")).join(", ")}</div>`);
-  if ((m.absentees || []).length) o.push(`<div style="${H}">Abwesend</div><div style="${P}">${m.absentees.map((p) => esc(p.name)).join(", ")}</div>`);
+  if ((m.participants || []).length) o.push(`<div style="${H}">${L("Teilnehmer", "Participants")}</div><div style="${P}">${m.participants.map((p) => esc(p.name) + (p.company ? ` (${esc(p.company)})` : "")).join(", ")}</div>`);
+  if ((m.absentees || []).length) o.push(`<div style="${H}">${L("Abwesend", "Absent")}</div><div style="${P}">${m.absentees.map((p) => esc(p.name)).join(", ")}</div>`);
   if ((m.agenda || []).length) {
-    o.push(`<div style="${H}">Agenda &amp; Mitschrift</div>`);
+    o.push(`<div style="${H}">${L("Agenda &amp; Mitschrift", "Agenda &amp; minutes")}</div>`);
     m.agenda.forEach((a, i) => {
       o.push(`<div style="margin:0 0 8px;"><div style="font-weight:bold;">${i + 1}. ${esc(a.title)}${a.done ? " ✓" : ""}</div>`);
       if (a.desc) o.push(`<div style="color:#6b7280;font-size:12px;">${esc(a.desc)}</div>`);
       if (a.notesHtml) o.push(`<div style="font-size:13px;margin:3px 0;">${sanitizeHtml(a.notesHtml)}</div>`);
-      [["Entscheidungen", a.decisions], ["Diskussion", a.discussion], ["Risiken", a.risks], ["Offene Fragen", a.openQuestions]]
+      [[L("Entscheidungen", "Decisions"), a.decisions], [L("Diskussion", "Discussion"), a.discussion], [L("Risiken", "Risks"), a.risks], [L("Offene Fragen", "Open questions"), a.openQuestions]]
         .filter((x) => x[1]).forEach(([k, v]) => o.push(`<div style="${P}"><b>${esc(k)}:</b> ${esc(v)}</div>`));
       o.push(`</div>`);
     });
   }
-  if ((m.decisions || []).length) { o.push(`<div style="${H}">Entscheidungen</div>`); m.decisions.forEach((d) => o.push(`<div style="${P}">• <b>${esc(d.title)}</b> (${esc(d.status)}${d.owner ? ", " + esc(d.owner) : ""}${d.date ? ", " + esc(fmtDay(d.date)) : ""})${d.desc ? " – " + esc(d.desc) : ""}</div>`)); }
-  if ((m.actionItems || []).length) { o.push(`<div style="${H}">Aufgaben</div>`); m.actionItems.forEach((a) => o.push(`<div style="${P}">☐ ${esc(a.text)}</div>`)); }
-  if (m.openPoints) o.push(`<div style="${H}">Offene Punkte</div><div style="${P}">${esc(m.openPoints).replace(/\n/g, "<br>")}</div>`);
-  if (m.nextMeeting && (m.nextMeeting.date || m.nextMeeting.note)) o.push(`<div style="${H}">Nächstes Meeting</div><div style="${P}">${esc(fmtDay(m.nextMeeting.date))} ${esc(m.nextMeeting.note || "")}</div>`);
-  if ((m.attachments || []).length) o.push(`<div style="${H}">Anlagen</div><div style="${P}">${m.attachments.map((f) => esc(f.name)).join(", ")}</div>`);
-  if ((m.voice || []).length) o.push(`<div style="${H}">Sprachmemos</div><div style="${P}">${m.voice.map((v) => esc(v.name)).join(", ")}</div>`);
+  if ((m.decisions || []).length) { o.push(`<div style="${H}">${L("Entscheidungen", "Decisions")}</div>`); m.decisions.forEach((d) => o.push(`<div style="${P}">• <b>${esc(d.title)}</b> (${esc(decisionStatusLabel(d.status))}${d.owner ? ", " + esc(d.owner) : ""}${d.date ? ", " + esc(fmtDay(d.date)) : ""})${d.desc ? " – " + esc(d.desc) : ""}</div>`)); }
+  if ((m.actionItems || []).length) { o.push(`<div style="${H}">${L("Aufgaben", "Tasks")}</div>`); m.actionItems.forEach((a) => o.push(`<div style="${P}">☐ ${esc(a.text)}</div>`)); }
+  if (m.openPoints) o.push(`<div style="${H}">${L("Offene Punkte", "Open points")}</div><div style="${P}">${esc(m.openPoints).replace(/\n/g, "<br>")}</div>`);
+  if (m.nextMeeting && (m.nextMeeting.date || m.nextMeeting.note)) o.push(`<div style="${H}">${L("Nächstes Meeting", "Next meeting")}</div><div style="${P}">${esc(fmtDay(m.nextMeeting.date))} ${esc(m.nextMeeting.note || "")}</div>`);
+  if ((m.attachments || []).length) o.push(`<div style="${H}">${L("Anlagen", "Attachments")}</div><div style="${P}">${m.attachments.map((f) => esc(f.name)).join(", ")}</div>`);
+  if ((m.voice || []).length) o.push(`<div style="${H}">${L("Sprachmemos", "Voice memos")}</div><div style="${P}">${m.voice.map((v) => esc(v.name)).join(", ")}</div>`);
   o.push(`<div style="margin-top:16px;color:#9ca3af;font-size:11px;">© Copyright by Patrick Thorn</div>`);
   o.push(`</div>`);
   return o.join("");
@@ -812,7 +830,7 @@ export async function copyMeetingToClipboard(m) {
 
 // Mailprogramm mit Betreff + Text öffnen
 export function emailMeeting(m) {
-  const subject = `Protokoll: ${m.title || "Meeting"}${m.date ? " (" + fmtDay(m.date) + ")" : ""}`;
+  const subject = `${L("Protokoll", "Minutes")}: ${m.title || L("Meeting", "Meeting")}${m.date ? " (" + fmtDay(m.date) + ")" : ""}`;
   const body = meetingToText(m);
   window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }

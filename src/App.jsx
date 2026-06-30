@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import Sortable from "sortablejs";
 import Meetings, { loadMeetings, meetingToMarkdown, meetingToText, exportWord, printMeeting, copyMeetingToClipboard, emailMeeting, enrichMeeting } from "./Meetings.jsx";
+import { L, useLang, getLang, setLang } from "./i18n.js";
 
 // --- Markenfarben (Farbchapter) ---
 const C = {
@@ -27,25 +28,34 @@ const catDisplay = (c) => (c ? (OLD_MAP[c] !== undefined ? OLD_MAP[c] : c) : "")
 
 const PRIORITIES = {
   "": { label: "", color: C.cool, rank: 3 },
-  hoch: { label: "Hoch", color: C.burgundy, rank: 0 },
-  mittel: { label: "Mittel", color: C.sky, rank: 1 },
-  niedrig: { label: "Niedrig", color: C.cool, rank: 2 },
+  hoch: { get label() { return L("Hoch", "High"); }, color: C.burgundy, rank: 0 },
+  mittel: { get label() { return L("Mittel", "Medium"); }, color: C.sky, rank: 1 },
+  niedrig: { get label() { return L("Niedrig", "Low"); }, color: C.cool, rank: 2 },
 };
 const STATUS = {
   "": { label: "", color: C.cool },
-  offen: { label: "Offen", color: C.cool },
-  inArbeit: { label: "In Arbeit", color: C.sky },
-  onHold: { label: "On Hold", color: C.burgundyLight },
-  erledigt: { label: "Erledigt", color: C.burgundyDark },
+  offen: { get label() { return L("Offen", "Open"); }, color: C.cool },
+  inArbeit: { get label() { return L("In Arbeit", "In progress"); }, color: C.sky },
+  onHold: { get label() { return L("On Hold", "On hold"); }, color: C.burgundyLight },
+  erledigt: { get label() { return L("Erledigt", "Done"); }, color: C.burgundyDark },
 };
-const RECUR = { none: "Keine", weekly: "Wöchentlich", monthly: "Monatlich", quarterly: "Quartalsweise", yearly: "Jährlich" };
-const ESC = { "": "", ja: "Ja", nein: "Nein" };
+const RECUR = {
+  get none() { return L("Keine", "None"); },
+  get weekly() { return L("Wöchentlich", "Weekly"); },
+  get monthly() { return L("Monatlich", "Monthly"); },
+  get quarterly() { return L("Quartalsweise", "Quarterly"); },
+  get yearly() { return L("Jährlich", "Yearly"); },
+};
+const ESC = { "": "", get ja() { return L("Ja", "Yes"); }, get nein() { return L("Nein", "No"); } };
 const LEADS = [
-  { v: 0, label: "Am Fälligkeitstag" }, { v: 1, label: "1 Tag vorher" }, { v: 3, label: "3 Tage vorher" },
-  { v: 7, label: "1 Woche vorher" }, { v: 14, label: "2 Wochen vorher" },
+  { v: 0, get label() { return L("Am Fälligkeitstag", "On the due date"); } },
+  { v: 1, get label() { return L("1 Tag vorher", "1 day before"); } },
+  { v: 3, get label() { return L("3 Tage vorher", "3 days before"); } },
+  { v: 7, get label() { return L("1 Woche vorher", "1 week before"); } },
+  { v: 14, get label() { return L("2 Wochen vorher", "2 weeks before"); } },
 ];
 const SCOPES = {
-  personal: { key: "tasks-personal", shared: false, label: "Aufgaben" },
+  personal: { key: "tasks-personal", shared: false, get label() { return L("Aufgaben", "Tasks"); } },
 };
 const COMPANY_SUGGESTIONS = ["Eurowings", "Aviation Academy Austria", "Lufthansa Group", "Austro Control"];
 const DEFAULT_COMPANIES = [...COMPANY_SUGGESTIONS, "Privat"];
@@ -112,14 +122,14 @@ function urgency(t) {
 }
 function fmtDate(due) {
   if (!due) return "";
-  return new Date(due + "T00:00:00").toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "short" });
+  return new Date(due + "T00:00:00").toLocaleDateString(getLang() === "en" ? "en-GB" : "de-DE", { weekday: "short", day: "2-digit", month: "short" });
 }
 function relLabel(due) {
   const d = dayDiff(due);
   if (d === null) return "";
-  if (d < -1) return `${Math.abs(d)} Tage überfällig`;
-  if (d === -1) return "Gestern fällig"; if (d === 0) return "Heute fällig"; if (d === 1) return "Morgen fällig";
-  return `in ${d} Tagen`;
+  if (d < -1) return L(`${Math.abs(d)} Tage überfällig`, `${Math.abs(d)} days overdue`);
+  if (d === -1) return L("Gestern fällig", "Due yesterday"); if (d === 0) return L("Heute fällig", "Due today"); if (d === 1) return L("Morgen fällig", "Due tomorrow");
+  return L(`in ${d} Tagen`, `in ${d} days`);
 }
 function shiftDate(iso, rec) {
   const d = new Date(iso + "T00:00:00");
@@ -130,8 +140,8 @@ function shiftDate(iso, rec) {
   else return null;
   return d.toISOString().slice(0, 10);
 }
-const dt = (iso) => (iso ? new Date(iso).toLocaleDateString("de-DE") : "");
-const fmtDay = (d) => (d ? new Date(d + "T00:00:00").toLocaleDateString("de-DE") : "");
+const dt = (iso) => (iso ? new Date(iso).toLocaleDateString(getLang() === "en" ? "en-GB" : "de-DE") : "");
+const fmtDay = (d) => (d ? new Date(d + "T00:00:00").toLocaleDateString(getLang() === "en" ? "en-GB" : "de-DE") : "");
 function downloadBlob(data, filename, type) {
   const blob = new Blob([data], { type });
   const url = URL.createObjectURL(blob);
@@ -149,6 +159,7 @@ async function saveScope(scope, arr) {
 
 // ===========================================================================
 export default function App() {
+  const lang = useLang(); // re-render bei Sprachwechsel
   const [tasks, setTasks] = useState({ personal: [] });
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
   const [companies, setCompanies] = useState(DEFAULT_COMPANIES);
@@ -308,7 +319,7 @@ export default function App() {
   function flash(msg) { setToast(msg); clearTimeout(flash._t); flash._t = setTimeout(() => setToast(null), 2600); }
   async function persist(scope, arr) {
     setTasks((prev) => ({ ...prev, [scope]: arr }));
-    try { await saveScope(scope, arr); } catch { flash("Speichern fehlgeschlagen – bitte erneut versuchen."); }
+    try { await saveScope(scope, arr); } catch { flash(L("Speichern fehlgeschlagen – bitte erneut versuchen.", "Saving failed – please try again.")); }
   }
   // Manuelle Reihenfolge per Drag&Drop: sichtbare Liste neu anordnen, Reihenfolge
   // in tasks.personal übernehmen (versteckte/gefilterte Aufgaben behalten ihre Plätze).
@@ -328,44 +339,44 @@ export default function App() {
   // Aufgabe aus einem Meeting-Action-Item erzeugen (für Meetings-Modul)
   function addExternalTask(partial = {}) {
     const task = normalizeTask({
-      id: uid(), title: (partial.title || "Aufgabe").slice(0, 200), notes: partial.notes || "",
+      id: uid(), title: (partial.title || L("Aufgabe", "Task")).slice(0, 200), notes: partial.notes || "",
       category: partial.category || "", priority: "", status: "offen",
       start: "", due: partial.due || "", remindLead: 3, contact: partial.contact || "",
       company: partial.company || "", link: partial.link || "", recurrence: "none", escalation: "",
       updatedAt: new Date().toISOString().slice(0, 10), createdAt: new Date().toISOString(), createdBy: "", completedAt: null,
     });
     persist("personal", [task, ...tasks.personal]);
-    flash("Aufgabe aus Meeting erstellt.");
+    flash(L("Aufgabe aus Meeting erstellt.", "Task created from meeting."));
     return task.id;
   }
   async function saveProfile(name) { setProfile(name); try { await window.storage.set("profile", JSON.stringify(name), false); } catch {} }
-  async function persistCategories(arr) { try { await window.storage.set("categories", JSON.stringify(arr), true); } catch { flash("Speichern fehlgeschlagen."); } }
-  async function persistCompanies(arr) { try { await window.storage.set("companies", JSON.stringify(arr), true); } catch { flash("Speichern fehlgeschlagen."); } }
-  async function persistPersons(arr) { setPersons(arr); try { await window.storage.set("persons", JSON.stringify(arr), true); } catch { flash("Speichern fehlgeschlagen."); } }
+  async function persistCategories(arr) { try { await window.storage.set("categories", JSON.stringify(arr), true); } catch { flash(L("Speichern fehlgeschlagen.", "Saving failed.")); } }
+  async function persistCompanies(arr) { try { await window.storage.set("companies", JSON.stringify(arr), true); } catch { flash(L("Speichern fehlgeschlagen.", "Saving failed.")); } }
+  async function persistPersons(arr) { setPersons(arr); try { await window.storage.set("persons", JSON.stringify(arr), true); } catch { flash(L("Speichern fehlgeschlagen.", "Saving failed.")); } }
 
   function addCategory() {
     const name = newCat.trim();
     if (!name) return;
-    if (categories.some((c) => c.toLowerCase() === name.toLowerCase())) { flash("Bereich existiert bereits."); return; }
-    const next = [...categories, name]; setCategories(next); persistCategories(next); setNewCat(""); flash("Bereich hinzugefügt.");
+    if (categories.some((c) => c.toLowerCase() === name.toLowerCase())) { flash(L("Bereich existiert bereits.", "Area already exists.")); return; }
+    const next = [...categories, name]; setCategories(next); persistCategories(next); setNewCat(""); flash(L("Bereich hinzugefügt.", "Area added."));
   }
   function deleteCategory(name) {
     const next = categories.filter((c) => c !== name); setCategories(next); persistCategories(next);
     if (filterCat === name) setFilterCat("all");
     if (form.category === name) setForm((f) => ({ ...f, category: "" }));
-    flash("Bereich gelöscht.");
+    flash(L("Bereich gelöscht.", "Area deleted."));
   }
   function addCompany() {
     const name = newCompany.trim();
     if (!name) return;
-    if (companies.some((c) => c.toLowerCase() === name.toLowerCase())) { flash("Company existiert bereits."); return; }
-    const next = [...companies, name]; setCompanies(next); persistCompanies(next); setNewCompany(""); flash("Company hinzugefügt.");
+    if (companies.some((c) => c.toLowerCase() === name.toLowerCase())) { flash(L("Company existiert bereits.", "Company already exists.")); return; }
+    const next = [...companies, name]; setCompanies(next); persistCompanies(next); setNewCompany(""); flash(L("Company hinzugefügt.", "Company added."));
   }
   function deleteCompany(name) {
     const next = companies.filter((c) => c !== name); setCompanies(next); persistCompanies(next);
     if (filterCompany === name) setFilterCompany("all");
     if (form.company === name) setForm((f) => ({ ...f, company: "" }));
-    flash("Company gelöscht.");
+    flash(L("Company gelöscht.", "Company deleted."));
   }
 
   function onContactChange(val) {
@@ -375,7 +386,7 @@ export default function App() {
 
   function submit() {
     const title = form.title.trim();
-    if (!title) { flash("Bitte einen Titel eingeben."); return; }
+    if (!title) { flash(L("Bitte einen Titel eingeben.", "Please enter a title.")); return; }
     if (editId) {
       const scope = editScope;
       const arr = tasks[scope].map((x) => x.id === editId ? {
@@ -385,7 +396,7 @@ export default function App() {
         checklist: form.checklist || [], attachments: form.attachments || [], images: form.images || [],
         completedAt: form.status === "erledigt" ? (x.completedAt || new Date().toISOString()) : null,
       } : x);
-      persist(scope, arr); flash("Aufgabe aktualisiert."); cancelEdit();
+      persist(scope, arr); flash(L("Aufgabe aktualisiert.", "Task updated.")); cancelEdit();
     } else {
       const scope = form.scope;
       const task = normalizeTask({
@@ -397,7 +408,7 @@ export default function App() {
         createdBy: "", completedAt: form.status === "erledigt" ? new Date().toISOString() : null,
       });
       persist(scope, [task, ...tasks[scope]]);
-      flash("Aufgabe hinzugefügt.");
+      flash(L("Aufgabe hinzugefügt.", "Task added."));
       setForm({ ...blank, scope, category: form.category, company: form.company });
       setClOpen(false); setAtOpen(false);
     }
@@ -416,16 +427,16 @@ export default function App() {
   async function formAddFiles(e) {
     const files = Array.from(e.target.files || []); e.target.value = ""; let added = 0;
     for (const fl of files) {
-      if (fl.size > 3 * 1024 * 1024) { flash(`„${fl.name}“ > 3 MB – übersprungen.`); continue; }
+      if (fl.size > 3 * 1024 * 1024) { flash(L(`„${fl.name}“ > 3 MB – übersprungen.`, `"${fl.name}" > 3 MB – skipped.`)); continue; }
       const dataUrl = await fileToDataUrl(fl);
       setForm((f) => ({ ...f, attachments: [...(f.attachments || []), { id: uid(), name: fl.name, type: fl.type, size: fl.size, dataUrl }] })); added++;
     }
-    if (added) flash("Anhang hinzugefügt.");
+    if (added) flash(L("Anhang hinzugefügt.", "Attachment added."));
   }
   async function formAddImages(e) {
     const files = Array.from(e.target.files || []); e.target.value = ""; let added = 0;
     for (const fl of files) { const dataUrl = await compressImage(fl); if (dataUrl) { setForm((f) => ({ ...f, images: [...(f.images || []), { id: uid(), name: fl.name, dataUrl }] })); added++; } }
-    if (added) flash("Bild gespeichert.");
+    if (added) flash(L("Bild gespeichert.", "Image saved."));
   }
   function formRemoveAtt(field, id) { setForm((f) => ({ ...f, [field]: (f[field] || []).filter((x) => x.id !== id) })); }
   function changeStatus(scope, id, newStatus) {
@@ -442,7 +453,7 @@ export default function App() {
       const nd = shiftDate(t.due, t.recurrence);
       if (nd) {
         const next = normalizeTask({ ...t, id: uid(), status: "offen", due: nd, completedAt: null, completedBy: "", log: [], updatedAt: new Date().toISOString().slice(0, 10), createdAt: new Date().toISOString() });
-        arr = [next, ...arr]; flash("Folgetermin angelegt: " + fmtDate(nd));
+        arr = [next, ...arr]; flash(L("Folgetermin angelegt: ", "Follow-up created: ") + fmtDate(nd));
       }
     }
     persist(scope, arr);
@@ -451,7 +462,7 @@ export default function App() {
     persist(scope, tasks[scope].filter((x) => x.id !== id));
     setConfirmDel(null);
     setSelected((s) => { const n = new Set(s); n.delete(scope + ":" + id); return n; });
-    flash("Aufgabe gelöscht.");
+    flash(L("Aufgabe gelöscht.", "Task deleted."));
   }
   function startEdit(scope, t) {
     setEditId(t.id); setEditScope(scope);
@@ -478,13 +489,13 @@ export default function App() {
   // Persons handlers
   function submitPerson() {
     const name = pForm.name.trim();
-    if (!name) { flash("Bitte einen Namen eingeben."); return; }
+    if (!name) { flash(L("Bitte einen Namen eingeben.", "Please enter a name.")); return; }
     if (pEditId) {
       persistPersons(persons.map((p) => p.id === pEditId ? { ...p, ...pForm, name, topics: pForm.topics } : p));
-      flash("Person aktualisiert.");
+      flash(L("Person aktualisiert.", "Person updated."));
     } else {
       persistPersons([{ id: uid(), ...pForm, name }, ...persons]);
-      flash("Person hinzugefügt.");
+      flash(L("Person hinzugefügt.", "Person added."));
     }
     cancelPerson();
   }
@@ -492,7 +503,7 @@ export default function App() {
     setPEditId(p.id);
     setPForm({ name: p.name, company: p.company || "", role: p.role || "", email: p.email || "", phone: p.phone || "", topics: p.topics || [], notes: p.notes || "" });
   }
-  function deletePerson(id) { persistPersons(persons.filter((p) => p.id !== id)); if (pEditId === id) cancelPerson(); flash("Person gelöscht."); }
+  function deletePerson(id) { persistPersons(persons.filter((p) => p.id !== id)); if (pEditId === id) cancelPerson(); flash(L("Person gelöscht.", "Person deleted.")); }
   function cancelPerson() { setPEditId(null); setPForm({ name: "", company: "", role: "", email: "", phone: "", topics: [], notes: "" }); }
   function togglePTopic(c) { setPForm((f) => ({ ...f, topics: f.topics.includes(c) ? f.topics.filter((x) => x !== c) : [...f.topics, c] })); }
 
@@ -508,12 +519,12 @@ export default function App() {
       tasks: { personal: tasks.personal }, meetings: allMeetings, meetingTypes,
     };
     downloadBlob(JSON.stringify(payload, null, 2), `TODO_Sicherung_${new Date().toISOString().slice(0, 10)}.json`, "application/json");
-    flash("Sicherung erstellt (inkl. Meetings).");
+    flash(L("Sicherung erstellt (inkl. Meetings).", "Backup created (incl. meetings)."));
   }
   function onRestoreFile(e) {
     const f = e.target.files && e.target.files[0];
     if (!f) return;
-    f.text().then((txt) => { try { setPendingRestore(JSON.parse(txt)); } catch { flash("Datei nicht lesbar."); } });
+    f.text().then((txt) => { try { setPendingRestore(JSON.parse(txt)); } catch { flash(L("Datei nicht lesbar.", "File not readable.")); } });
     e.target.value = "";
   }
   async function applyRestore() {
@@ -530,8 +541,8 @@ export default function App() {
       if (Array.isArray(obj.meetings)) { await window.storage.set("meetings", JSON.stringify(obj.meetings), true); setMeetings(obj.meetings); }
       if (Array.isArray(obj.meetingTypes)) await window.storage.set("meetingTypes", JSON.stringify(obj.meetingTypes), true);
       if (typeof obj.profile === "string") { setProfile(obj.profile); await window.storage.set("profile", JSON.stringify(obj.profile), false); }
-      flash("Sicherung wiederhergestellt (inkl. Meetings).");
-    } catch { flash("Wiederherstellung teilweise fehlgeschlagen."); }
+      flash(L("Sicherung wiederhergestellt (inkl. Meetings).", "Backup restored (incl. meetings)."));
+    } catch { flash(L("Wiederherstellung teilweise fehlgeschlagen.", "Restore partially failed.")); }
     setPendingRestore(null);
   }
 
@@ -580,10 +591,10 @@ export default function App() {
     return true;
   });
   const BOARD_COLS = [
-    { key: "offen", label: "Offen", match: (t) => !isDone(t) && (t.status === "offen" || !t.status) },
-    { key: "inArbeit", label: "In Arbeit", match: (t) => !isDone(t) && t.status === "inArbeit" },
-    { key: "onHold", label: "On Hold", match: (t) => !isDone(t) && t.status === "onHold" },
-    { key: "erledigt", label: "Erledigt", match: (t) => isDone(t) },
+    { key: "offen", get label() { return L("Offen", "Open"); }, match: (t) => !isDone(t) && (t.status === "offen" || !t.status) },
+    { key: "inArbeit", get label() { return L("In Arbeit", "In progress"); }, match: (t) => !isDone(t) && t.status === "inArbeit" },
+    { key: "onHold", get label() { return L("On Hold", "On hold"); }, match: (t) => !isDone(t) && t.status === "onHold" },
+    { key: "erledigt", get label() { return L("Erledigt", "Done"); }, match: (t) => isDone(t) },
   ];
 
   const contactFilterOptions = Array.from(new Set(merged.map((t) => t.contact).filter(Boolean))).sort((a, b) => a.localeCompare(b, "de"));
@@ -607,7 +618,7 @@ export default function App() {
     .filter((t) => (expStatus === "open" ? !isDone(t) : expStatus === "erledigt" ? isDone(t) : true))
     .sort((a, b) => { const da = a.due ? dayDiff(a.due) : Infinity; const db = b.due ? dayDiff(b.due) : Infinity; return da - db; });
   const expAllSelected = expList.length > 0 && expList.every((t) => selected.has(keyOf(t)));
-  const expLabel = selectedItems.length ? `${selectedItems.length} ausgewählt` : `alle ${expList.length}`;
+  const expLabel = selectedItems.length ? L(`${selectedItems.length} ausgewählt`, `${selectedItems.length} selected`) : L(`alle ${expList.length}`, `all ${expList.length}`);
 
   function togglePick(t) { setSelected((s) => { const n = new Set(s); const k = keyOf(t); n.has(k) ? n.delete(k) : n.add(k); return n; }); }
   function selectAll(items) {
@@ -621,26 +632,26 @@ export default function App() {
   }
   function doPrint(fallback) {
     const target = selectedItems.length ? selectedItems : fallback;
-    if (!target.length) { flash("Keine Aufgaben zum Export."); return; }
+    if (!target.length) { flash(L("Keine Aufgaben zum Export.", "No tasks to export.")); return; }
     setPrintKind("tasks"); setPrintItems(target); setPrintNonce((n) => n + 1);
   }
   function doExcel(fallback) {
     const target = selectedItems.length ? selectedItems : fallback;
-    if (!target.length) { flash("Keine Aufgaben zum Export."); return; }
+    if (!target.length) { flash(L("Keine Aufgaben zum Export.", "No tasks to export.")); return; }
     const rows = target.map((t) => ({
-      Titel: t.title, Bereich: catDisplay(t.category), Priorität: (PRIORITIES[t.priority] || PRIORITIES[""]).label,
-      Status: STATUS[t.status] ? STATUS[t.status].label : "Offen",
-      Eskalation: ESC[t.escalation] || "", "Letztes Update": fmtDay(t.updatedAt),
-      Startdatum: t.start ? dt(t.start + "T00:00:00") : "",
-      "Fällig am": t.due ? dt(t.due + "T00:00:00") : "", Erinnerung: t.due ? leadLabel(t.remindLead) : "",
-      Wiederholung: RECUR[t.recurrence] || "Keine", Ansprechperson: t.contact || "", Company: t.company || "",
-      Referenz: t.link || "", Notiz: t.notes || "",
-      Checkliste: (t.checklist || []).length ? `${t.checklist.filter((c) => c.done).length}/${t.checklist.length}` : "",
-      Unteraufgaben: (t.checklist || []).map((c) => `${c.done ? "☑" : "☐"} ${c.text}`).join(" | "),
-      Anhänge: (t.attachments || []).map((a) => a.name).join(", "),
-      Bilder: (t.images || []).length || "",
-      Verlauf: (t.log || []).map((e) => `${dt(e.date)}${e.by ? " " + e.by : ""}: ${e.text}`).join(" | "),
-      "Erstellt am": dt(t.createdAt), "Erledigt am": dt(t.completedAt),
+      [L("Titel", "Title")]: t.title, [L("Bereich", "Area")]: catDisplay(t.category), [L("Priorität", "Priority")]: (PRIORITIES[t.priority] || PRIORITIES[""]).label,
+      [L("Status", "Status")]: STATUS[t.status] ? STATUS[t.status].label : L("Offen", "Open"),
+      [L("Eskalation", "Escalation")]: ESC[t.escalation] || "", [L("Letztes Update", "Last update")]: fmtDay(t.updatedAt),
+      [L("Startdatum", "Start date")]: t.start ? dt(t.start + "T00:00:00") : "",
+      [L("Fällig am", "Due on")]: t.due ? dt(t.due + "T00:00:00") : "", [L("Erinnerung", "Reminder")]: t.due ? leadLabel(t.remindLead) : "",
+      [L("Wiederholung", "Recurrence")]: RECUR[t.recurrence] || L("Keine", "None"), [L("Ansprechperson", "Contact")]: t.contact || "", [L("Company", "Company")]: t.company || "",
+      [L("Referenz", "Reference")]: t.link || "", [L("Notiz", "Note")]: t.notes || "",
+      [L("Checkliste", "Checklist")]: (t.checklist || []).length ? `${t.checklist.filter((c) => c.done).length}/${t.checklist.length}` : "",
+      [L("Unteraufgaben", "Subtasks")]: (t.checklist || []).map((c) => `${c.done ? "☑" : "☐"} ${c.text}`).join(" | "),
+      [L("Anhänge", "Attachments")]: (t.attachments || []).map((a) => a.name).join(", "),
+      [L("Bilder", "Images")]: (t.images || []).length || "",
+      [L("Verlauf", "History")]: (t.log || []).map((e) => `${dt(e.date)}${e.by ? " " + e.by : ""}: ${e.text}`).join(" | "),
+      [L("Erstellt am", "Created on")]: dt(t.createdAt), [L("Erledigt am", "Completed on")]: dt(t.completedAt),
     }));
     try {
       const ws = XLSX.utils.json_to_sheet(rows);
@@ -649,32 +660,32 @@ export default function App() {
       XLSX.utils.book_append_sheet(wb, ws, "TO DO");
       const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
       downloadBlob(out, `TODO_${new Date().toISOString().slice(0, 10)}.xlsx`, "application/octet-stream");
-      flash("Excel-Datei erstellt.");
-    } catch { flash("Excel-Export fehlgeschlagen."); }
+      flash(L("Excel-Datei erstellt.", "Excel file created."));
+    } catch { flash(L("Excel-Export fehlgeschlagen.", "Excel export failed.")); }
   }
   function openTaskCount(name) {
     return merged.filter((t) => !isDone(t) && t.contact && t.contact.toLowerCase() === (name || "").toLowerCase()).length;
   }
   function doPrintPersons(items) {
-    if (!items.length) { flash("Keine Personen zum Export."); return; }
+    if (!items.length) { flash(L("Keine Personen zum Export.", "No persons to export.")); return; }
     setPrintKind("persons"); setPrintPersons(items); setPrintNonce((n) => n + 1);
   }
   function doExcelPersons(items) {
-    if (!items.length) { flash("Keine Personen zum Export."); return; }
+    if (!items.length) { flash(L("Keine Personen zum Export.", "No persons to export.")); return; }
     const rows = items.map((p) => ({
-      Name: p.name, "Funktion / Rolle": p.role || "", Company: p.company || "",
-      "E-Mail": p.email || "", Telefon: p.phone || "", Themen: (p.topics || []).join(", "),
-      Notiz: p.notes || "", "Offene Aufgaben": openTaskCount(p.name),
+      [L("Name", "Name")]: p.name, [L("Funktion / Rolle", "Function / role")]: p.role || "", [L("Company", "Company")]: p.company || "",
+      [L("E-Mail", "Email")]: p.email || "", [L("Telefon", "Phone")]: p.phone || "", [L("Themen", "Topics")]: (p.topics || []).join(", "),
+      [L("Notiz", "Note")]: p.notes || "", [L("Offene Aufgaben", "Open tasks")]: openTaskCount(p.name),
     }));
     try {
       const ws = XLSX.utils.json_to_sheet(rows);
       ws["!cols"] = [{ wch: 24 }, { wch: 20 }, { wch: 22 }, { wch: 28 }, { wch: 18 }, { wch: 40 }, { wch: 40 }, { wch: 14 }];
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Personen");
+      XLSX.utils.book_append_sheet(wb, ws, L("Personen", "Persons"));
       const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
       downloadBlob(out, `Personen_${new Date().toISOString().slice(0, 10)}.xlsx`, "application/octet-stream");
-      flash("Excel-Datei erstellt.");
-    } catch { flash("Excel-Export fehlgeschlagen."); }
+      flash(L("Excel-Datei erstellt.", "Excel file created."));
+    } catch { flash(L("Excel-Export fehlgeschlagen.", "Excel export failed.")); }
   }
   function addLog(scope, id) {
     const k = scope + ":" + id;
@@ -699,26 +710,26 @@ export default function App() {
     return (
       <li key={keyOf(t)} className={"task" + (isDone(t) ? " done" : "")} style={{ borderLeftColor: ccol }}>
         {sortBy === "manual" && !groupByCat && view === "all" && (
-          <span className="drag-handle" title="Ziehen zum Sortieren"><GripVertical size={16} /></span>
+          <span className="drag-handle" title={L("Ziehen zum Sortieren", "Drag to sort")}><GripVertical size={16} /></span>
         )}
         <button className={"check" + (isDone(t) ? " on" : "")} style={isDone(t) ? { background: col, borderColor: col } : {}}
-          onClick={() => changeStatus(t._scope, t.id, isDone(t) ? "offen" : "erledigt")} title={isDone(t) ? "Als offen markieren" : "Als erledigt markieren"}>
+          onClick={() => changeStatus(t._scope, t.id, isDone(t) ? "offen" : "erledigt")} title={isDone(t) ? L("Als offen markieren", "Mark as open") : L("Als erledigt markieren", "Mark as done")}>
           {isDone(t) ? <Check size={14} strokeWidth={3} /> : null}
         </button>
         <div className="task-body">
           <div className="task-title">{t.title}{t.recurrence !== "none" && <Repeat size={13} className="rep" />}</div>
           {t.notes && <div className="task-notes">{t.notes}</div>}
-          {t.link && <a className="task-link" href={normalizeUrl(t.link)} target="_blank" rel="noreferrer"><ExternalLink size={12} /> Referenz</a>}
+          {t.link && <a className="task-link" href={normalizeUrl(t.link)} target="_blank" rel="noreferrer"><ExternalLink size={12} /> {L("Referenz", "Reference")}</a>}
           <div className="task-meta">
             {catName && <span className="badge" style={{ color: col, borderColor: col }}>{catName}</span>}
-            {t.escalation === "ja" && <span className="esc-badge">Eskalation</span>}
+            {t.escalation === "ja" && <span className="esc-badge">{L("Eskalation", "Escalation")}</span>}
             <select className="status-sel" value={t.status} style={{ color: st.color, borderColor: st.color }}
               onChange={(e) => changeStatus(t._scope, t.id, e.target.value)}>
               {Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
             </select>
             {t.priority && <span className="dot" style={{ background: (PRIORITIES[t.priority] || PRIORITIES[""]).color }} />}
             {t.priority && <span className="prio-label">{(PRIORITIES[t.priority] || PRIORITIES[""]).label}</span>}
-            {t.start && <span className="due muted">Start: {fmtDate(t.start)}</span>}
+            {t.start && <span className="due muted">{L("Start:", "Start:")} {fmtDate(t.start)}</span>}
             {t.due && (
               <span className="due" style={u === "overdue" ? { color: C.burgundyDarker, fontWeight: 700 } : u === "today" ? { color: C.burgundy, fontWeight: 700 } : {}}>
                 {fmtDate(t.due)} · {relLabel(t.due)}
@@ -729,7 +740,7 @@ export default function App() {
           {(t.contact || t.updatedAt) && (
             <div className="task-contact">
               {t.contact && <span><User size={12} /> {t.contact}</span>}
-              {t.updatedAt && <span className="upd">Akt. {fmtDay(t.updatedAt)}</span>}
+              {t.updatedAt && <span className="upd">{L("Akt.", "Upd.")} {fmtDay(t.updatedAt)}</span>}
             </div>
           )}
           {(t.checklist || []).length > 0 && (() => {
@@ -765,7 +776,7 @@ export default function App() {
             return (
               <div className="log">
                 <button className="log-toggle" onClick={() => toggleLog(k)}>
-                  <MessageSquare size={12} /> Verlauf{n > 0 ? ` (${n})` : ""} {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                  <MessageSquare size={12} /> {L("Verlauf", "History")}{n > 0 ? ` (${n})` : ""} {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                 </button>
                 {open && (
                   <div className="log-body">
@@ -773,11 +784,11 @@ export default function App() {
                       <div key={e.id} className="log-entry">
                         <span className="log-date">{dt(e.date)}{e.by ? " · " + e.by : ""}</span>
                         <span className="log-text">{e.text}</span>
-                        <button className="log-del" onClick={() => delLog(t._scope, t.id, e.id)} title="Eintrag löschen"><X size={12} /></button>
+                        <button className="log-del" onClick={() => delLog(t._scope, t.id, e.id)} title={L("Eintrag löschen", "Delete entry")}><X size={12} /></button>
                       </div>
                     ))}
                     <div className="log-add">
-                      <input value={logDrafts[k] || ""} placeholder="Nachfassen / Notiz mit Datum …"
+                      <input value={logDrafts[k] || ""} placeholder={L("Nachfassen / Notiz mit Datum …", "Follow-up / note with date …")}
                         onChange={(ev) => setLogDrafts((d) => ({ ...d, [k]: ev.target.value }))}
                         onKeyDown={(ev) => ev.key === "Enter" && addLog(t._scope, t.id)} />
                       <button className="btn out" onClick={() => addLog(t._scope, t.id)}><Plus size={14} /></button>
@@ -789,11 +800,11 @@ export default function App() {
           })()}
         </div>
         <div className="task-actions">
-          <button className="icon" onClick={() => startEdit(t._scope, t)} title="Bearbeiten"><Pencil size={15} /></button>
+          <button className="icon" onClick={() => startEdit(t._scope, t)} title={L("Bearbeiten", "Edit")}><Pencil size={15} /></button>
           {confirmDel === keyOf(t) ? (
-            <button className="icon del-confirm" onClick={() => del(t._scope, t.id)}>Löschen?</button>
+            <button className="icon del-confirm" onClick={() => del(t._scope, t.id)}>{L("Löschen?", "Delete?")}</button>
           ) : (
-            <button className="icon" onClick={() => setConfirmDel(keyOf(t))} title="Löschen"><X size={16} /></button>
+            <button className="icon" onClick={() => setConfirmDel(keyOf(t))} title={L("Löschen", "Delete")}><X size={16} /></button>
           )}
         </div>
       </li>
@@ -803,8 +814,8 @@ export default function App() {
   // grouped
   let groupNames = [], groups = {};
   if (groupByCat) {
-    list.forEach((t) => { const name = catDisplay(t.category) || "Ohne Bereich"; (groups[name] = groups[name] || []).push(t); });
-    groupNames = Object.keys(groups).sort((a, b) => a === "Ohne Bereich" ? 1 : b === "Ohne Bereich" ? -1 : a.localeCompare(b, "de"));
+    list.forEach((t) => { const name = catDisplay(t.category) || L("Ohne Bereich", "No area"); (groups[name] = groups[name] || []).push(t); });
+    groupNames = Object.keys(groups).sort((a, b) => a === L("Ohne Bereich", "No area") ? 1 : b === L("Ohne Bereich", "No area") ? -1 : a.localeCompare(b, "de"));
   }
 
   const isTaskView = view === "all";
@@ -826,15 +837,21 @@ export default function App() {
           <div className="hd-inner">
             <Plane className="hd-mark" strokeWidth={2.2} />
             <div><h1>TO DO APP</h1></div>
-            <div className="hd-profile">
-              <label>Dein Name</label>
-              <input value={profile} onChange={(e) => saveProfile(e.target.value)} placeholder="z. B. Patrick Thorn" maxLength={60} />
+            <div className="hd-right">
+              <div className="lang-switch" title={L("Sprache", "Language")}>
+                <button className={"lang-b" + (lang === "de" ? " on" : "")} onClick={() => setLang("de")}>DE</button>
+                <button className={"lang-b" + (lang === "en" ? " on" : "")} onClick={() => setLang("en")}>EN</button>
+              </div>
+              <div className="hd-profile">
+                <label>{L("Dein Name", "Your name")}</label>
+                <input value={profile} onChange={(e) => saveProfile(e.target.value)} placeholder={L("z. B. Patrick Thorn", "e.g. Patrick Thorn")} maxLength={60} />
+              </div>
             </div>
           </div>
           <nav className="tabs">
             {["dash", "all", "meetings", "persons", "export"].map((v) => (
               <button key={v} className={"tab" + (view === v ? " on" : "")} onClick={() => setView(v)}>
-                {v === "dash" ? "Dashboard" : v === "all" ? "Aufgaben" : v === "meetings" ? "Meeting Minutes" : v === "persons" ? "Persons" : "Druck & Export"}
+                {v === "dash" ? L("Dashboard", "Dashboard") : v === "all" ? L("Aufgaben", "Tasks") : v === "meetings" ? L("Meeting Minutes", "Meeting Minutes") : v === "persons" ? L("Persons", "Persons") : L("Druck & Export", "Print & Export")}
               </button>
             ))}
           </nav>
@@ -842,9 +859,9 @@ export default function App() {
 
         {isTaskView && (overdue.length || today.length || soon.length) > 0 && (
           <section className="band">
-            {overdue.length > 0 && <ReminderGroup tone={C.burgundyDarker} label="Überfällig" items={overdue} />}
-            {today.length > 0 && <ReminderGroup tone={C.burgundy} label="Heute fällig" items={today} />}
-            {soon.length > 0 && <ReminderGroup tone={C.sky} label="Demnächst" items={soon} />}
+            {overdue.length > 0 && <ReminderGroup tone={C.burgundyDarker} label={L("Überfällig", "Overdue")} items={overdue} />}
+            {today.length > 0 && <ReminderGroup tone={C.burgundy} label={L("Heute fällig", "Due today")} items={today} />}
+            {soon.length > 0 && <ReminderGroup tone={C.sky} label={L("Demnächst", "Upcoming")} items={soon} />}
           </section>
         )}
 
@@ -853,36 +870,36 @@ export default function App() {
           <div className="dash">
             <div className="dash-head">
               <div>
-                <h2 className="dash-hi">Hallo{profile ? ", " + profile : ""} 👋</h2>
-                <div className="dash-date">{new Date().toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</div>
+                <h2 className="dash-hi">{L("Hallo", "Hello")}{profile ? ", " + profile : ""} 👋</h2>
+                <div className="dash-date">{new Date().toLocaleDateString(getLang() === "en" ? "en-GB" : "de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</div>
               </div>
               <div className="dash-quick">
-                <button className="btn primary" onClick={openNewTask}><Plus size={15} /> Aufgabe</button>
-                <button className="btn out" onClick={() => setView("meetings")}><Plane size={15} /> Meeting</button>
+                <button className="btn primary" onClick={openNewTask}><Plus size={15} /> {L("Aufgabe", "Task")}</button>
+                <button className="btn out" onClick={() => setView("meetings")}><Plane size={15} /> {L("Meeting", "Meeting")}</button>
               </div>
             </div>
 
             <div className="dash-tiles">
-              <button className="dtile" onClick={() => { setFilterStatus("open"); setView("all"); }}><b>{stat.offen}</b><span>Offen</span></button>
-              <button className="dtile" onClick={() => { setFilterStatus("inArbeit"); setView("all"); }}><b style={{ color: C.sky }}>{stat.inArbeit}</b><span>In Arbeit</span></button>
-              <button className="dtile" onClick={() => { setFilterStatus("onHold"); setView("all"); }}><b style={{ color: C.burgundyLight }}>{stat.onHold}</b><span>On Hold</span></button>
-              <button className="dtile" onClick={() => { setFilterStatus("erledigt"); setView("all"); }}><b style={{ color: C.burgundyDark }}>{stat.erledigt}</b><span>Erledigt</span></button>
-              <button className="dtile over" onClick={() => { setFilterStatus("open"); setView("all"); }}><b style={{ color: C.burgundyDarker }}>{stat.overdue}</b><span>Überfällig</span></button>
+              <button className="dtile" onClick={() => { setFilterStatus("open"); setView("all"); }}><b>{stat.offen}</b><span>{L("Offen", "Open")}</span></button>
+              <button className="dtile" onClick={() => { setFilterStatus("inArbeit"); setView("all"); }}><b style={{ color: C.sky }}>{stat.inArbeit}</b><span>{L("In Arbeit", "In progress")}</span></button>
+              <button className="dtile" onClick={() => { setFilterStatus("onHold"); setView("all"); }}><b style={{ color: C.burgundyLight }}>{stat.onHold}</b><span>{L("On Hold", "On hold")}</span></button>
+              <button className="dtile" onClick={() => { setFilterStatus("erledigt"); setView("all"); }}><b style={{ color: C.burgundyDark }}>{stat.erledigt}</b><span>{L("Erledigt", "Done")}</span></button>
+              <button className="dtile over" onClick={() => { setFilterStatus("open"); setView("all"); }}><b style={{ color: C.burgundyDarker }}>{stat.overdue}</b><span>{L("Überfällig", "Overdue")}</span></button>
             </div>
 
             <div className="dash-grid">
-              <DashList title="Überfällig" tone={C.burgundyDarker} items={overdue} onOpen={startEdit} />
-              <DashList title="Heute fällig" tone={C.burgundy} items={today} onOpen={startEdit} />
-              <DashList title="Demnächst" tone={C.sky} items={soon} onOpen={startEdit} />
+              <DashList title={L("Überfällig", "Overdue")} tone={C.burgundyDarker} items={overdue} onOpen={startEdit} />
+              <DashList title={L("Heute fällig", "Due today")} tone={C.burgundy} items={today} onOpen={startEdit} />
+              <DashList title={L("Demnächst", "Upcoming")} tone={C.sky} items={soon} onOpen={startEdit} />
               <div className="dash-card">
-                <div className="dash-card-h" style={{ color: C.burgundyDark }}>Nächste Meetings</div>
+                <div className="dash-card-h" style={{ color: C.burgundyDark }}>{L("Nächste Meetings", "Upcoming meetings")}</div>
                 {(() => {
                   const ts = new Date().toISOString().slice(0, 10);
                   const up = meetings.filter((m) => !m.archived && (m.date || "") >= ts).sort((a, b) => (a.date || "").localeCompare(b.date || "")).slice(0, 6);
-                  if (!up.length) return <div className="dash-empty">Keine anstehenden Meetings.</div>;
+                  if (!up.length) return <div className="dash-empty">{L("Keine anstehenden Meetings.", "No upcoming meetings.")}</div>;
                   return up.map((m) => (
                     <button key={m.id} className="dash-row" style={{ borderLeftColor: C.burgundy }} onClick={() => setView("meetings")}>
-                      <span className="dash-row-t">{m.title || "(ohne Titel)"}</span>
+                      <span className="dash-row-t">{m.title || L("(ohne Titel)", "(untitled)")}</span>
                       <span className="dash-row-m">{fmtDay(m.date)}{m.start ? " · " + m.start : ""}{m.type ? " · " + m.type : ""}</span>
                     </button>
                   ));
@@ -897,65 +914,65 @@ export default function App() {
           <div className="grid">
             <aside className="panel">
               <div className="card">
-                <h2>{pEditId ? "Person bearbeiten" : "Neue Ansprechperson"}</h2>
-                <div className="field"><label>Name</label>
-                  <input value={pForm.name} onChange={(e) => setPForm({ ...pForm, name: e.target.value })} placeholder="Vor- und Nachname" /></div>
+                <h2>{pEditId ? L("Person bearbeiten", "Edit person") : L("Neue Ansprechperson", "New contact")}</h2>
+                <div className="field"><label>{L("Name", "Name")}</label>
+                  <input value={pForm.name} onChange={(e) => setPForm({ ...pForm, name: e.target.value })} placeholder={L("Vor- und Nachname", "First and last name")} /></div>
                 <div className="row2">
-                  <div className="field"><label>Funktion / Rolle</label>
-                    <input value={pForm.role} onChange={(e) => setPForm({ ...pForm, role: e.target.value })} placeholder="z. B. NPCT" /></div>
+                  <div className="field"><label>{L("Funktion / Rolle", "Function / role")}</label>
+                    <input value={pForm.role} onChange={(e) => setPForm({ ...pForm, role: e.target.value })} placeholder={L("z. B. NPCT", "e.g. NPCT")} /></div>
                   <div className="field">
-                    <div className="label-row"><label>Company</label>
-                      <button className="link sm" onClick={() => setCmgrOpen(true)}><Settings size={13} /> Verwalten</button></div>
+                    <div className="label-row"><label>{L("Company", "Company")}</label>
+                      <button className="link sm" onClick={() => setCmgrOpen(true)}><Settings size={13} /> {L("Verwalten", "Manage")}</button></div>
                     <select value={pForm.company} onChange={(e) => setPForm({ ...pForm, company: e.target.value })}>
                       <option value=""></option>
                       {sortedCompanies.map((c) => <option key={c} value={c}>{c}</option>)}
                     </select></div>
                 </div>
                 <div className="row2">
-                  <div className="field"><label>E-Mail</label>
+                  <div className="field"><label>{L("E-Mail", "Email")}</label>
                     <input value={pForm.email} onChange={(e) => setPForm({ ...pForm, email: e.target.value })} placeholder="name@firma.com" /></div>
-                  <div className="field"><label>Telefon</label>
+                  <div className="field"><label>{L("Telefon", "Phone")}</label>
                     <input value={pForm.phone} onChange={(e) => setPForm({ ...pForm, phone: e.target.value })} placeholder="+43 …" /></div>
                 </div>
                 <div className="field">
-                  <div className="label-row"><label>Zuständige Themen / Bereiche</label>
-                    <button className="link sm" onClick={() => setMgrOpen(true)}><Settings size={13} /> Verwalten</button></div>
+                  <div className="label-row"><label>{L("Zuständige Themen / Bereiche", "Responsible topics / areas")}</label>
+                    <button className="link sm" onClick={() => setMgrOpen(true)}><Settings size={13} /> {L("Verwalten", "Manage")}</button></div>
                   <div className="chips">
                     {sortedCats.map((c) => (
                       <button key={c} className={"chip" + (pForm.topics.includes(c) ? " on" : "")}
                         style={pForm.topics.includes(c) ? { background: catColor(c), borderColor: catColor(c) } : {}}
                         onClick={() => togglePTopic(c)}>{c}</button>
                     ))}
-                    {sortedCats.length === 0 && <span className="hint">Noch keine Bereiche angelegt.</span>}
+                    {sortedCats.length === 0 && <span className="hint">{L("Noch keine Bereiche angelegt.", "No areas created yet.")}</span>}
                   </div>
                 </div>
-                <div className="field"><label>Notiz (optional)</label>
-                  <textarea rows={2} value={pForm.notes} onChange={(e) => setPForm({ ...pForm, notes: e.target.value })} placeholder="Erreichbarkeit, Vertretung …" /></div>
+                <div className="field"><label>{L("Notiz (optional)", "Note (optional)")}</label>
+                  <textarea rows={2} value={pForm.notes} onChange={(e) => setPForm({ ...pForm, notes: e.target.value })} placeholder={L("Erreichbarkeit, Vertretung …", "Availability, deputy …")} /></div>
                 <div className="actions">
-                  <button className="btn primary" onClick={submitPerson}>{pEditId ? "Aktualisieren" : "Hinzufügen"}</button>
-                  {pEditId && <button className="btn ghost" onClick={cancelPerson}>Abbrechen</button>}
+                  <button className="btn primary" onClick={submitPerson}>{pEditId ? L("Aktualisieren", "Update") : L("Hinzufügen", "Add")}</button>
+                  {pEditId && <button className="btn ghost" onClick={cancelPerson}>{L("Abbrechen", "Cancel")}</button>}
                 </div>
-                <p className="hint">Beim Anlegen einer Aufgabe schlägt das Feld „Ansprechperson" diese Namen vor.</p>
+                <p className="hint">{L("Beim Anlegen einer Aufgabe schlägt das Feld „Ansprechperson\" diese Namen vor.", "When creating a task, the \"Contact\" field suggests these names.")}</p>
               </div>
             </aside>
 
             <main className="panel">
               <div className="toolbar">
                 <div className="search"><Search size={15} />
-                  <input value={pSearch} onChange={(e) => setPSearch(e.target.value)} placeholder="Person, Company, Thema suchen …" /></div>
-                <div className="tb-group"><span>Thema</span>
+                  <input value={pSearch} onChange={(e) => setPSearch(e.target.value)} placeholder={L("Person, Company, Thema suchen …", "Search person, company, topic …")} /></div>
+                <div className="tb-group"><span>{L("Thema", "Topic")}</span>
                   <select value={pFilterTopic} onChange={(e) => setPFilterTopic(e.target.value)}>
-                    <option value="all">Alle Themen</option>
+                    <option value="all">{L("Alle Themen", "All topics")}</option>
                     {sortedCats.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div className="seg viewtog">
-                  <button className={"seg-b" + (pLayout === "list" ? " on" : "")} onClick={() => setPLayout("list")} title="Liste"><List size={15} /> Liste</button>
-                  <button className={"seg-b" + (pLayout === "cards" ? " on" : "")} onClick={() => setPLayout("cards")} title="Karten"><Square size={15} /> Karten</button>
+                  <button className={"seg-b" + (pLayout === "list" ? " on" : "")} onClick={() => setPLayout("list")} title={L("Liste", "List")}><List size={15} /> {L("Liste", "List")}</button>
+                  <button className={"seg-b" + (pLayout === "cards" ? " on" : "")} onClick={() => setPLayout("cards")} title={L("Karten", "Cards")}><Square size={15} /> {L("Karten", "Cards")}</button>
                 </div>
               </div>
-              {persons.length === 0 && <div className="empty">Noch keine Ansprechpersonen. Links die erste anlegen.</div>}
-              {persons.length > 0 && personsView.length === 0 && <div className="empty">Keine Treffer.</div>}
+              {persons.length === 0 && <div className="empty">{L("Noch keine Ansprechpersonen. Links die erste anlegen.", "No contacts yet. Create the first one on the left.")}</div>}
+              {persons.length > 0 && personsView.length === 0 && <div className="empty">{L("Keine Treffer.", "No matches.")}</div>}
               {pLayout === "list" ? (
                 <div className="plist">
                   {personsView.map((p) => {
@@ -964,17 +981,17 @@ export default function App() {
                       <div key={p.id} className="prow">
                         <span className="prow-name" onClick={() => editPerson(p)}>{p.name}</span>
                         <div className="prow-fields">
-                          {p.company && <span className="pf"><b>Company:</b> {p.company}</span>}
-                          {p.role && <span className="pf"><b>Funktion:</b> {p.role}</span>}
-                          {p.email && <span className="pf"><b>E-Mail:</b> <a href={"mailto:" + p.email}>{p.email}</a></span>}
-                          {p.phone && <span className="pf"><b>Telefon:</b> <a href={"tel:" + p.phone}>{p.phone}</a></span>}
-                          {p.notes && <span className="pf"><b>Notizen:</b> {p.notes}</span>}
+                          {p.company && <span className="pf"><b>{L("Company:", "Company:")}</b> {p.company}</span>}
+                          {p.role && <span className="pf"><b>{L("Funktion:", "Function:")}</b> {p.role}</span>}
+                          {p.email && <span className="pf"><b>{L("E-Mail:", "Email:")}</b> <a href={"mailto:" + p.email}>{p.email}</a></span>}
+                          {p.phone && <span className="pf"><b>{L("Telefon:", "Phone:")}</b> <a href={"tel:" + p.phone}>{p.phone}</a></span>}
+                          {p.notes && <span className="pf"><b>{L("Notizen:", "Notes:")}</b> {p.notes}</span>}
                         </div>
                         <div className="prow-topics">{(p.topics || []).map((c) => <span key={c} className="badge" style={{ color: catColor(c), borderColor: catColor(c) }}>{c}</span>)}</div>
-                        <span className="prow-count">{openP} offen</span>
+                        <span className="prow-count">{openP} {L("offen", "open")}</span>
                         <div className="task-actions">
-                          <button className="icon" onClick={() => editPerson(p)} title="Bearbeiten"><Pencil size={15} /></button>
-                          <button className="icon" onClick={() => deletePerson(p.id)} title="Löschen"><X size={16} /></button>
+                          <button className="icon" onClick={() => editPerson(p)} title={L("Bearbeiten", "Edit")}><Pencil size={15} /></button>
+                          <button className="icon" onClick={() => deletePerson(p.id)} title={L("Löschen", "Delete")}><X size={16} /></button>
                         </div>
                       </div>
                     );
@@ -994,8 +1011,8 @@ export default function App() {
                           <div className="pcard-role">{[p.role, p.company].filter(Boolean).join(" · ")}</div>
                         </div>
                         <div className="task-actions" onClick={(e) => e.stopPropagation()}>
-                          <button className="icon" onClick={() => editPerson(p)} title="Bearbeiten"><Pencil size={15} /></button>
-                          <button className="icon" onClick={() => deletePerson(p.id)} title="Löschen"><X size={16} /></button>
+                          <button className="icon" onClick={() => editPerson(p)} title={L("Bearbeiten", "Edit")}><Pencil size={15} /></button>
+                          <button className="icon" onClick={() => deletePerson(p.id)} title={L("Löschen", "Delete")}><X size={16} /></button>
                         </div>
                       </div>
                       {(p.topics || []).length > 0 && (
@@ -1009,14 +1026,14 @@ export default function App() {
                       </div>
                       {p.notes && <div className="pnotes">{p.notes}</div>}
                       <button className="pcount-btn" onClick={() => setExpandedPerson(open ? null : p.id)}>
-                        {openTasks.length} offene Aufgabe(n) {open ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                        {openTasks.length} {L("offene Aufgabe(n)", "open task(s)")} {open ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                       </button>
                       {open && (
                         <div className="pdrill">
-                          {pTasks.length === 0 && <div className="pdrill-empty">Keine Aufgaben zugeordnet.</div>}
+                          {pTasks.length === 0 && <div className="pdrill-empty">{L("Keine Aufgaben zugeordnet.", "No tasks assigned.")}</div>}
                           {pTasks.sort((a, b) => (isDone(a) === isDone(b) ? 0 : isDone(a) ? 1 : -1)).map((t) => (
                             <div key={keyOf(t)} className={"pdrill-row" + (isDone(t) ? " done" : "")} style={{ borderLeftColor: companyColor(t.company) }}
-                              onClick={() => startEdit(t._scope, t)} title="Zur Aufgabe">
+                              onClick={() => startEdit(t._scope, t)} title={L("Zur Aufgabe", "Go to task")}>
                               <span className="pdrill-title">{t.title}</span>
                               <span className="pdrill-meta">
                                 <span style={{ color: (STATUS[t.status] || STATUS.offen).color, fontWeight: 800 }}>{(STATUS[t.status] || STATUS.offen).label || "—"}</span>
@@ -1037,23 +1054,23 @@ export default function App() {
           /* ===================== DRUCK & EXPORT ===================== */
           <div className="exportwrap">
             <div className="card">
-              <h2>Auswahl & Export</h2>
-              <p className="hint">Einzelne Aufgaben anhaken – oder ohne Auswahl die gesamte gefilterte Liste exportieren. „Drucken / PDF" öffnet den Druckdialog; dort „Als PDF speichern" wählen.</p>
+              <h2>{L("Auswahl & Export", "Selection & export")}</h2>
+              <p className="hint">{L("Einzelne Aufgaben anhaken – oder ohne Auswahl die gesamte gefilterte Liste exportieren. „Drucken / PDF\" öffnet den Druckdialog; dort „Als PDF speichern\" wählen.", "Tick individual tasks – or without a selection, export the entire filtered list. \"Print / PDF\" opens the print dialog; choose \"Save as PDF\" there.")}</p>
               <div className="exp-controls">
-                <div className="tb-group"><span>Status</span>
+                <div className="tb-group"><span>{L("Status", "Status")}</span>
                   <select value={expStatus} onChange={(e) => setExpStatus(e.target.value)}>
-                    <option value="all">Alle</option><option value="open">Offen</option><option value="erledigt">Erledigt</option>
+                    <option value="all">{L("Alle", "All")}</option><option value="open">{L("Offen", "Open")}</option><option value="erledigt">{L("Erledigt", "Done")}</option>
                   </select></div>
                 <button className="link" onClick={() => selectAll(expList)} disabled={!expList.length}>
-                  {expAllSelected ? <CheckSquare size={15} /> : <Square size={15} />} {expAllSelected ? "Auswahl aufheben" : "Alle auswählen"}
+                  {expAllSelected ? <CheckSquare size={15} /> : <Square size={15} />} {expAllSelected ? L("Auswahl aufheben", "Deselect all") : L("Alle auswählen", "Select all")}
                 </button>
-                {selectedItems.length > 0 && <button className="link" onClick={() => setSelected(new Set())}>Auswahl leeren</button>}
+                {selectedItems.length > 0 && <button className="link" onClick={() => setSelected(new Set())}>{L("Auswahl leeren", "Clear selection")}</button>}
                 <div className="exp-actions">
-                  <button className="btn out" onClick={() => doPrint(expList)}><Printer size={15} /> Drucken / PDF <em>({expLabel})</em></button>
-                  <button className="btn out" onClick={() => doExcel(expList)}><FileSpreadsheet size={15} /> Excel <em>({expLabel})</em></button>
+                  <button className="btn out" onClick={() => doPrint(expList)}><Printer size={15} /> {L("Drucken / PDF", "Print / PDF")} <em>({expLabel})</em></button>
+                  <button className="btn out" onClick={() => doExcel(expList)}><FileSpreadsheet size={15} /> {L("Excel", "Excel")} <em>({expLabel})</em></button>
                 </div>
               </div>
-              {expList.length === 0 ? <div className="empty">Keine Aufgaben in dieser Auswahl.</div> : (
+              {expList.length === 0 ? <div className="empty">{L("Keine Aufgaben in dieser Auswahl.", "No tasks in this selection.")}</div> : (
                 <ul className="exp-list">
                   {expList.map((t) => {
                     const picked = selected.has(keyOf(t));
@@ -1076,33 +1093,33 @@ export default function App() {
             </div>
 
             <div className="card">
-              <h2>Personen exportieren</h2>
-              <p className="hint">Alle Ansprechpersonen als PDF/Druck oder Excel.</p>
+              <h2>{L("Personen exportieren", "Export persons")}</h2>
+              <p className="hint">{L("Alle Ansprechpersonen als PDF/Druck oder Excel.", "All contacts as PDF/print or Excel.")}</p>
               <div className="data-row">
-                <button className="btn out" onClick={() => doPrintPersons(persons)} disabled={!persons.length}><Printer size={15} /> Drucken / PDF</button>
-                <button className="btn out" onClick={() => doExcelPersons(persons)} disabled={!persons.length}><FileSpreadsheet size={15} /> Excel</button>
+                <button className="btn out" onClick={() => doPrintPersons(persons)} disabled={!persons.length}><Printer size={15} /> {L("Drucken / PDF", "Print / PDF")}</button>
+                <button className="btn out" onClick={() => doExcelPersons(persons)} disabled={!persons.length}><FileSpreadsheet size={15} /> {L("Excel", "Excel")}</button>
               </div>
-              {persons.length === 0 && <div className="empty">Noch keine Personen angelegt.</div>}
+              {persons.length === 0 && <div className="empty">{L("Noch keine Personen angelegt.", "No persons created yet.")}</div>}
             </div>
 
             <div className="card">
-              <h2>Meeting-Protokolle exportieren</h2>
-              <p className="hint">Pro Meeting: „Kopieren" (formatiert in E-Mail einfügen), „E-Mail" (Mailprogramm öffnen) oder als PDF/Druck, Word, Markdown, TXT. Anlegen/Bearbeiten im Tab „Meeting Minutes".</p>
-              {meetings.length === 0 ? <div className="empty">Noch keine Meetings angelegt.</div> : (
+              <h2>{L("Meeting-Protokolle exportieren", "Export meeting minutes")}</h2>
+              <p className="hint">{L("Pro Meeting: „Kopieren\" (formatiert in E-Mail einfügen), „E-Mail\" (Mailprogramm öffnen) oder als PDF/Druck, Word, Markdown, TXT. Anlegen/Bearbeiten im Tab „Meeting Minutes\".", "Per meeting: \"Copy\" (paste formatted into an email), \"Email\" (open mail app) or as PDF/print, Word, Markdown, TXT. Create/edit in the \"Meeting Minutes\" tab.")}</p>
+              {meetings.length === 0 ? <div className="empty">{L("Noch keine Meetings angelegt.", "No meetings created yet.")}</div> : (
                 <ul className="mexp-list">
                   {meetings.slice().sort((a, b) => (b.date || "").localeCompare(a.date || "")).map((mt) => {
                     const me = enrichMeeting(mt, persons); // Funktion/Firma aus aktuellen Kontakten nachfüllen
                     return (
                     <li key={mt.id} className="mexp-row">
                       <div className="mexp-info">
-                        <span className="mexp-title">{mt.title || "(ohne Titel)"}</span>
+                        <span className="mexp-title">{mt.title || L("(ohne Titel)", "(untitled)")}</span>
                         <span className="mexp-meta">{fmtDay(mt.date)}{mt.type ? " · " + mt.type : ""}{mt.status ? " · " + mt.status : ""}</span>
                       </div>
                       <div className="mexp-actions">
-                        <button className="btn out" onClick={async () => { const ok = await copyMeetingToClipboard(me); flash(ok ? "Protokoll kopiert – in E-Mail mit Strg/Cmd+V einfügen." : "Kopieren nicht möglich."); }}><Copy size={14} /> Kopieren</button>
-                        <button className="btn out" onClick={() => emailMeeting(me)}><Mail size={14} /> E-Mail</button>
-                        <button className="btn out" onClick={() => printMeeting(me)}><Printer size={14} /> PDF</button>
-                        <button className="btn out" onClick={() => exportWord(me)}><FileText size={14} /> Word</button>
+                        <button className="btn out" onClick={async () => { const ok = await copyMeetingToClipboard(me); flash(ok ? L("Protokoll kopiert – in E-Mail mit Strg/Cmd+V einfügen.", "Minutes copied – paste into an email with Ctrl/Cmd+V.") : L("Kopieren nicht möglich.", "Copy not possible.")); }}><Copy size={14} /> {L("Kopieren", "Copy")}</button>
+                        <button className="btn out" onClick={() => emailMeeting(me)}><Mail size={14} /> {L("E-Mail", "Email")}</button>
+                        <button className="btn out" onClick={() => printMeeting(me)}><Printer size={14} /> {L("PDF", "PDF")}</button>
+                        <button className="btn out" onClick={() => exportWord(me)}><FileText size={14} /> {L("Word", "Word")}</button>
                         <button className="btn out" onClick={() => downloadBlob(meetingToMarkdown(me), `Protokoll_${(mt.title || "Meeting").replace(/\s+/g, "_")}.md`, "text/markdown")}>MD</button>
                         <button className="btn out" onClick={() => downloadBlob(meetingToText(me), `Protokoll_${(mt.title || "Meeting").replace(/\s+/g, "_")}.txt`, "text/plain")}>TXT</button>
                       </div>
@@ -1114,18 +1131,18 @@ export default function App() {
             </div>
 
             <div className="card">
-              <h2>Sicherung</h2>
-              <p className="hint">Lädt <b>alle Daten</b> (Aufgaben, Bereiche, Companies, Personen, Meetings inkl. Anhänge, Meeting-Typen) als eine JSON-Datei. Regelmäßig empfohlen. Mit „Sicherung laden" kannst du alles wiederherstellen.</p>
+              <h2>{L("Sicherung", "Backup")}</h2>
+              <p className="hint">{L("Lädt", "Downloads")} <b>{L("alle Daten", "all data")}</b> {L("(Aufgaben, Bereiche, Companies, Personen, Meetings inkl. Anhänge, Meeting-Typen) als eine JSON-Datei. Regelmäßig empfohlen. Mit „Sicherung laden\" kannst du alles wiederherstellen.", "(tasks, areas, companies, persons, meetings incl. attachments, meeting types) as a single JSON file. Recommended regularly. With \"Load backup\" you can restore everything.")}</p>
               <div className="data-row">
-                <button className="btn out" onClick={doBackup}><Download size={15} /> Sicherung herunterladen</button>
-                <label className="btn out filelbl"><Upload size={15} /> Sicherung laden
+                <button className="btn out" onClick={doBackup}><Download size={15} /> {L("Sicherung herunterladen", "Download backup")}</button>
+                <label className="btn out filelbl"><Upload size={15} /> {L("Sicherung laden", "Load backup")}
                   <input type="file" accept="application/json,.json" onChange={onRestoreFile} hidden /></label>
               </div>
               {pendingRestore && (
-                <div className="restore-confirm">Aktuelle Daten durch die geladene Sicherung ersetzen?
+                <div className="restore-confirm">{L("Aktuelle Daten durch die geladene Sicherung ersetzen?", "Replace current data with the loaded backup?")}
                   <div className="data-row">
-                    <button className="btn primary" onClick={applyRestore}>Wiederherstellen</button>
-                    <button className="btn ghost" onClick={() => setPendingRestore(null)}>Abbrechen</button>
+                    <button className="btn primary" onClick={applyRestore}>{L("Wiederherstellen", "Restore")}</button>
+                    <button className="btn ghost" onClick={() => setPendingRestore(null)}>{L("Abbrechen", "Cancel")}</button>
                   </div>
                 </div>
               )}
@@ -1135,106 +1152,106 @@ export default function App() {
           /* ============ NEUE AUFGABE / BEARBEITEN ============ */
           <div className="formwrap" ref={formRef}>
               <div className="card">
-                <h2>{editId ? "Aufgabe bearbeiten" : "Neue Aufgabe"}</h2>
-                <div className="field"><label>Titel</label>
+                <h2>{editId ? L("Aufgabe bearbeiten", "Edit task") : L("Neue Aufgabe", "New task")}</h2>
+                <div className="field"><label>{L("Titel", "Title")}</label>
                   <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    onKeyDown={(e) => e.key === "Enter" && submit()} placeholder="Was ist zu tun?" /></div>
-                <div className="field"><label>Notiz (optional)</label>
-                  <textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Kontext, Referenz, nächster Schritt …" /></div>
+                    onKeyDown={(e) => e.key === "Enter" && submit()} placeholder={L("Was ist zu tun?", "What needs to be done?")} /></div>
+                <div className="field"><label>{L("Notiz (optional)", "Note (optional)")}</label>
+                  <textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder={L("Kontext, Referenz, nächster Schritt …", "Context, reference, next step …")} /></div>
                 <div className="field">
-                  <div className="label-row"><label>Bereich</label>
-                    <button className="link sm" onClick={() => setMgrOpen(true)}><Settings size={13} /> Verwalten</button></div>
+                  <div className="label-row"><label>{L("Bereich", "Area")}</label>
+                    <button className="link sm" onClick={() => setMgrOpen(true)}><Settings size={13} /> {L("Verwalten", "Manage")}</button></div>
                   <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
                     <option value=""></option>
                     {sortedCats.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div className="row2">
-                  <div className="field"><label>Priorität</label>
+                  <div className="field"><label>{L("Priorität", "Priority")}</label>
                     <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
                       {Object.entries(PRIORITIES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                     </select></div>
-                  <div className="field"><label>Status</label>
+                  <div className="field"><label>{L("Status", "Status")}</label>
                     <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
                       {Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                     </select></div>
                 </div>
                 <div className="row2">
-                  <div className="field"><label>Ansprechperson</label>
-                    <input list="personnames" value={form.contact} onChange={(e) => onContactChange(e.target.value)} placeholder="Name / Funktion" />
+                  <div className="field"><label>{L("Ansprechperson", "Contact")}</label>
+                    <input list="personnames" value={form.contact} onChange={(e) => onContactChange(e.target.value)} placeholder={L("Name / Funktion", "Name / function")} />
                     <datalist id="personnames">{persons.slice().sort((a, b) => (a.name || "").localeCompare(b.name || "", "de")).map((p) => <option key={p.id} value={p.name} />)}</datalist></div>
                   <div className="field">
-                    <div className="label-row"><label>Company</label>
-                      <button className="link sm" onClick={() => setCmgrOpen(true)}><Settings size={13} /> Verwalten</button></div>
+                    <div className="label-row"><label>{L("Company", "Company")}</label>
+                      <button className="link sm" onClick={() => setCmgrOpen(true)}><Settings size={13} /> {L("Verwalten", "Manage")}</button></div>
                     <select value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })}>
                       <option value=""></option>
                       {sortedCompanies.map((c) => <option key={c} value={c}>{c}</option>)}
                     </select></div>
                 </div>
                 <div className="field">
-                  <div className="label-row"><label>Startdatum (optional)</label>
-                    {form.start && <button type="button" className="link sm" onClick={() => setForm({ ...form, start: "" })}>Löschen</button>}</div>
+                  <div className="label-row"><label>{L("Startdatum (optional)", "Start date (optional)")}</label>
+                    {form.start && <button type="button" className="link sm" onClick={() => setForm({ ...form, start: "" })}>{L("Löschen", "Clear")}</button>}</div>
                   <input type="date" value={form.start} onChange={(e) => setForm({ ...form, start: e.target.value })} /></div>
                 <div className="row2">
                   <div className="field">
-                    <div className="label-row"><label>Fällig am (optional)</label>
-                      {form.due && <button type="button" className="link sm" onClick={() => setForm({ ...form, due: "" })}>Löschen</button>}</div>
+                    <div className="label-row"><label>{L("Fällig am (optional)", "Due on (optional)")}</label>
+                      {form.due && <button type="button" className="link sm" onClick={() => setForm({ ...form, due: "" })}>{L("Löschen", "Clear")}</button>}</div>
                     <input type="date" value={form.due} onChange={(e) => setForm({ ...form, due: e.target.value })} /></div>
-                  <div className="field"><label>Erinnerung</label>
+                  <div className="field"><label>{L("Erinnerung", "Reminder")}</label>
                     <select value={form.remindLead} onChange={(e) => setForm({ ...form, remindLead: e.target.value })} disabled={!form.due}>
                       {LEADS.map((l) => <option key={l.v} value={l.v}>{l.label}</option>)}
                     </select></div>
                 </div>
-                <div className="field"><label>Wiederholung</label>
+                <div className="field"><label>{L("Wiederholung", "Recurrence")}</label>
                   <select value={form.recurrence} onChange={(e) => setForm({ ...form, recurrence: e.target.value })}>
                     {Object.entries(RECUR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select></div>
                 {editId ? (
                   <div className="row2">
-                    <div className="field"><label>Eskalationsbedarf</label>
+                    <div className="field"><label>{L("Eskalationsbedarf", "Escalation needed")}</label>
                       <select value={form.escalation} onChange={(e) => setForm({ ...form, escalation: e.target.value })}>
-                        <option value=""></option><option value="ja">Ja</option><option value="nein">Nein</option>
+                        <option value=""></option><option value="ja">{L("Ja", "Yes")}</option><option value="nein">{L("Nein", "No")}</option>
                       </select></div>
-                    <div className="field"><label>Letztes Update</label>
-                      <div className="ro-field">{form.updatedAt ? fmtDay(form.updatedAt) : fmtDay(new Date().toISOString().slice(0, 10))}<span className="ro-hint">automatisch</span></div></div>
+                    <div className="field"><label>{L("Letztes Update", "Last update")}</label>
+                      <div className="ro-field">{form.updatedAt ? fmtDay(form.updatedAt) : fmtDay(new Date().toISOString().slice(0, 10))}<span className="ro-hint">{L("automatisch", "automatic")}</span></div></div>
                   </div>
                 ) : (
-                  <div className="field"><label>Eskalationsbedarf</label>
+                  <div className="field"><label>{L("Eskalationsbedarf", "Escalation needed")}</label>
                     <select value={form.escalation} onChange={(e) => setForm({ ...form, escalation: e.target.value })}>
-                      <option value=""></option><option value="ja">Ja</option><option value="nein">Nein</option>
+                      <option value=""></option><option value="ja">{L("Ja", "Yes")}</option><option value="nein">{L("Nein", "No")}</option>
                     </select></div>
                 )}
-                <div className="field"><label>Referenz-Link (optional)</label>
-                  <input value={form.link} onChange={(e) => setForm({ ...form, link: e.target.value })} placeholder="https:// … (Reg, Drive-Dokument)" /></div>
+                <div className="field"><label>{L("Referenz-Link (optional)", "Reference link (optional)")}</label>
+                  <input value={form.link} onChange={(e) => setForm({ ...form, link: e.target.value })} placeholder={L("https:// … (Reg, Drive-Dokument)", "https:// … (reg, Drive document)")} /></div>
 
                 {/* Optional: Unteraufgaben / Checkliste */}
                 {(clOpen || (form.checklist || []).length > 0) ? (
                   <div className="opt-sec">
-                    <div className="opt-head"><label>Unteraufgaben / Checkliste</label>
-                      <button type="button" className="link sm" onClick={() => { setClOpen(false); }}>ausblenden</button></div>
+                    <div className="opt-head"><label>{L("Unteraufgaben / Checkliste", "Subtasks / checklist")}</label>
+                      <button type="button" className="link sm" onClick={() => { setClOpen(false); }}>{L("ausblenden", "hide")}</button></div>
                     {(form.checklist || []).map((c) => (
                       <div key={c.id} className="chk-row">
                         <input type="checkbox" checked={!!c.done} onChange={(e) => chkUpd(c.id, { done: e.target.checked })} />
-                        <input className="chk-text" value={c.text} onChange={(e) => chkUpd(c.id, { text: e.target.value })} placeholder="Unteraufgabe …"
+                        <input className="chk-text" value={c.text} onChange={(e) => chkUpd(c.id, { text: e.target.value })} placeholder={L("Unteraufgabe …", "Subtask …")}
                           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); chkAdd(); } }} />
                         <button type="button" className="icon" onClick={() => chkDel(c.id)}><X size={14} /></button>
                       </div>
                     ))}
-                    <button type="button" className="link sm" onClick={chkAdd}><Plus size={13} /> Punkt hinzufügen</button>
+                    <button type="button" className="link sm" onClick={chkAdd}><Plus size={13} /> {L("Punkt hinzufügen", "Add item")}</button>
                   </div>
                 ) : (
-                  <button type="button" className="opt-add" onClick={() => { setClOpen(true); chkAdd(); }}><Plus size={14} /> Unteraufgaben / Checkliste</button>
+                  <button type="button" className="opt-add" onClick={() => { setClOpen(true); chkAdd(); }}><Plus size={14} /> {L("Unteraufgaben / Checkliste", "Subtasks / checklist")}</button>
                 )}
 
                 {/* Optional: Anhänge / Bilder */}
                 {(atOpen || (form.attachments || []).length > 0 || (form.images || []).length > 0) ? (
                   <div className="opt-sec">
-                    <div className="opt-head"><label>Anhänge & Bilder</label>
-                      <button type="button" className="link sm" onClick={() => setAtOpen(false)}>ausblenden</button></div>
+                    <div className="opt-head"><label>{L("Anhänge & Bilder", "Attachments & images")}</label>
+                      <button type="button" className="link sm" onClick={() => setAtOpen(false)}>{L("ausblenden", "hide")}</button></div>
                     <div className="data-row">
-                      <label className="btn out filelbl"><Upload size={14} /> Datei <input type="file" hidden multiple onChange={formAddFiles} /></label>
-                      <label className="btn out filelbl"><Upload size={14} /> Bild <input type="file" hidden accept="image/*" multiple onChange={formAddImages} /></label>
-                      <span className="hint">max. 3 MB pro Datei</span>
+                      <label className="btn out filelbl"><Upload size={14} /> {L("Datei", "File")} <input type="file" hidden multiple onChange={formAddFiles} /></label>
+                      <label className="btn out filelbl"><Upload size={14} /> {L("Bild", "Image")} <input type="file" hidden accept="image/*" multiple onChange={formAddImages} /></label>
+                      <span className="hint">{L("max. 3 MB pro Datei", "max. 3 MB per file")}</span>
                     </div>
                     {(form.images || []).length > 0 && (
                       <div className="att-thumbs">
@@ -1248,12 +1265,12 @@ export default function App() {
                     ))}
                   </div>
                 ) : (
-                  <button type="button" className="opt-add" onClick={() => setAtOpen(true)}><Plus size={14} /> Anhänge & Bilder</button>
+                  <button type="button" className="opt-add" onClick={() => setAtOpen(true)}><Plus size={14} /> {L("Anhänge & Bilder", "Attachments & images")}</button>
                 )}
 
                 <div className="actions">
-                  <button className="btn primary" onClick={submit}>{editId ? "Aktualisieren" : "Hinzufügen"}</button>
-                  <button className="btn ghost" onClick={cancelEdit}>{editId ? "Abbrechen" : "Zurück"}</button>
+                  <button className="btn primary" onClick={submit}>{editId ? L("Aktualisieren", "Update") : L("Hinzufügen", "Add")}</button>
+                  <button className="btn ghost" onClick={cancelEdit}>{editId ? L("Abbrechen", "Cancel") : L("Zurück", "Back")}</button>
                 </div>
               </div>
           </div>
@@ -1262,66 +1279,66 @@ export default function App() {
           <div className="listwrap">
             <main className="panel">
               <div className="list-head">
-                <h2>Aufgaben</h2>
-                <button className="btn primary" onClick={openNewTask}><Plus size={16} /> Neue Aufgabe</button>
+                <h2>{L("Aufgaben", "Tasks")}</h2>
+                <button className="btn primary" onClick={openNewTask}><Plus size={16} /> {L("Neue Aufgabe", "New task")}</button>
               </div>
               <div className="search-top">
                 <div className="search"><Search size={15} />
-                  <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Aufgaben nach Stichwort suchen … (Titel, Notiz, Person, Company, Bereich)" />
+                  <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={L("Aufgaben nach Stichwort suchen … (Titel, Notiz, Person, Company, Bereich)", "Search tasks by keyword … (title, note, person, company, area)")} />
                   {search && <button className="clear" onClick={() => setSearch("")}><X size={14} /></button>}
                 </div>
               </div>
               <div className="toolbar">
-                <div className="tb-group"><span>Bereich</span>
+                <div className="tb-group"><span>{L("Bereich", "Area")}</span>
                   <select value={filterCat} onChange={(e) => setFilterCat(e.target.value)}>
-                    <option value="all">Alle Bereiche</option><option value="__none__">Ohne Bereich</option>
+                    <option value="all">{L("Alle Bereiche", "All areas")}</option><option value="__none__">{L("Ohne Bereich", "No area")}</option>
                     {sortedCats.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select></div>
-                <div className="tb-group"><span>Status</span>
+                <div className="tb-group"><span>{L("Status", "Status")}</span>
                   <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-                    <option value="open">Offen (alle)</option><option value="inArbeit">In Arbeit</option>
-                    <option value="onHold">On Hold</option><option value="erledigt">Erledigt</option><option value="all">Alle</option>
+                    <option value="open">{L("Offen (alle)", "Open (all)")}</option><option value="inArbeit">{L("In Arbeit", "In progress")}</option>
+                    <option value="onHold">{L("On Hold", "On hold")}</option><option value="erledigt">{L("Erledigt", "Done")}</option><option value="all">{L("Alle", "All")}</option>
                   </select></div>
-                <div className="tb-group"><span>Company</span>
+                <div className="tb-group"><span>{L("Company", "Company")}</span>
                   <select value={filterCompany} onChange={(e) => setFilterCompany(e.target.value)}>
-                    <option value="all">Alle</option><option value="__none__">Ohne</option>
+                    <option value="all">{L("Alle", "All")}</option><option value="__none__">{L("Ohne", "None")}</option>
                     {sortedCompanies.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select></div>
-                <div className="tb-group"><span>Person</span>
+                <div className="tb-group"><span>{L("Person", "Person")}</span>
                   <select value={filterContact} onChange={(e) => setFilterContact(e.target.value)}>
-                    <option value="all">Alle</option><option value="__none__">Ohne</option>
+                    <option value="all">{L("Alle", "All")}</option><option value="__none__">{L("Ohne", "None")}</option>
                     {contactFilterOptions.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select></div>
-                <div className="tb-group"><span>Sortieren</span>
+                <div className="tb-group"><span>{L("Sortieren", "Sort")}</span>
                   <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                    <option value="due">Fälligkeit</option><option value="prio">Priorität</option><option value="created">Neueste</option><option value="manual">Eigene Reihenfolge</option>
-                    <option value="company">Company</option><option value="contact">Ansprechperson</option>
+                    <option value="due">{L("Fälligkeit", "Due date")}</option><option value="prio">{L("Priorität", "Priority")}</option><option value="created">{L("Neueste", "Newest")}</option><option value="manual">{L("Eigene Reihenfolge", "Custom order")}</option>
+                    <option value="company">{L("Company", "Company")}</option><option value="contact">{L("Ansprechperson", "Contact")}</option>
                   </select></div>
                 <button className="link" onClick={() => setGroupByCat((g) => !g)}>
-                  {groupByCat ? <CheckSquare size={15} /> : <Square size={15} />} Nach Bereich
+                  {groupByCat ? <CheckSquare size={15} /> : <Square size={15} />} {L("Nach Bereich", "By area")}
                 </button>
                 <div className="seg viewtog">
-                  <button className={"seg-b" + (taskLayout === "list" ? " on" : "")} onClick={() => setTaskLayout("list")} title="Liste"><List size={15} /> Liste</button>
-                  <button className={"seg-b" + (taskLayout === "board" ? " on" : "")} onClick={() => setTaskLayout("board")} title="Board"><Kanban size={15} /> Board</button>
+                  <button className={"seg-b" + (taskLayout === "list" ? " on" : "")} onClick={() => setTaskLayout("list")} title={L("Liste", "List")}><List size={15} /> {L("Liste", "List")}</button>
+                  <button className={"seg-b" + (taskLayout === "board" ? " on" : "")} onClick={() => setTaskLayout("board")} title={L("Board", "Board")}><Kanban size={15} /> {L("Board", "Board")}</button>
                 </div>
               </div>
 
               <div className="stats">
-                <span className="stat"><b>{stat.offen}</b> Offen</span>
-                <span className="stat"><b style={{ color: C.sky }}>{stat.inArbeit}</b> In Arbeit</span>
-                <span className="stat"><b style={{ color: C.burgundyLight }}>{stat.onHold}</b> On Hold</span>
-                <span className="stat"><b style={{ color: C.burgundyDark }}>{stat.erledigt}</b> Erledigt</span>
-                {stat.overdue > 0 && <span className="stat overdue"><b>{stat.overdue}</b> überfällig</span>}
+                <span className="stat"><b>{stat.offen}</b> {L("Offen", "Open")}</span>
+                <span className="stat"><b style={{ color: C.sky }}>{stat.inArbeit}</b> {L("In Arbeit", "In progress")}</span>
+                <span className="stat"><b style={{ color: C.burgundyLight }}>{stat.onHold}</b> {L("On Hold", "On hold")}</span>
+                <span className="stat"><b style={{ color: C.burgundyDark }}>{stat.erledigt}</b> {L("Erledigt", "Done")}</span>
+                {stat.overdue > 0 && <span className="stat overdue"><b>{stat.overdue}</b> {L("überfällig", "overdue")}</span>}
               </div>
 
               <div className="legend">
                 {CONTEXT_COMPANIES.map((c) => (
                   <span key={c} className="legend-item"><i style={{ background: companyColor(c) }} /> {c}</span>
                 ))}
-                <span className="legend-item"><i style={{ background: companyColor("") }} /> Andere</span>
+                <span className="legend-item"><i style={{ background: companyColor("") }} /> {L("Andere", "Other")}</span>
               </div>
 
-              {!loaded && <div className="empty">Aufgaben werden geladen …</div>}
+              {!loaded && <div className="empty">{L("Aufgaben werden geladen …", "Loading tasks …")}</div>}
 
               {loaded && taskLayout === "board" ? (
                 <div className="kboard">
@@ -1352,7 +1369,7 @@ export default function App() {
                 <>
                   {loaded && list.length === 0 && (
                     <div className="empty">
-                      {search ? "Keine Treffer." : filterStatus === "erledigt" ? "Noch nichts erledigt." : "Keine Aufgaben in dieser Ansicht. Oben „+ Neue Aufgabe“ anlegen."}
+                      {search ? L("Keine Treffer.", "No matches.") : filterStatus === "erledigt" ? L("Noch nichts erledigt.", "Nothing done yet.") : L("Keine Aufgaben in dieser Ansicht. Oben „+ Neue Aufgabe“ anlegen.", "No tasks in this view. Create one with \"+ New task\" above.")}
                     </div>
                   )}
                   {!groupByCat && <ul className="tasks" ref={tasksUlRef}>{list.map(renderTask)}</ul>}
@@ -1372,9 +1389,9 @@ export default function App() {
         {(!sync.online || sync.pending > 0 || sync.state === "syncing") && (
           <div className={"sync-badge" + (!sync.online ? " off" : "")}>
             <span className="sync-dot" />
-            {!sync.online ? "Offline – wird gespeichert"
-              : sync.state === "syncing" ? "Synchronisiere …"
-              : sync.pending + " Änderung(en) ausstehend"}
+            {!sync.online ? L("Offline – wird gespeichert", "Offline – being saved")
+              : sync.state === "syncing" ? L("Synchronisiere …", "Synchronising …")
+              : L(sync.pending + " Änderung(en) ausstehend", sync.pending + " change(s) pending")}
           </div>
         )}
         <footer className="app-foot">© Copyright by Patrick Thorn</footer>
@@ -1384,20 +1401,20 @@ export default function App() {
       {mgrOpen && (
         <div className="modal-bg" onClick={() => setMgrOpen(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-head"><h2>Bereiche verwalten</h2>
+            <div className="modal-head"><h2>{L("Bereiche verwalten", "Manage areas")}</h2>
               <button className="icon" onClick={() => setMgrOpen(false)}><X size={18} /></button></div>
-            <p className="hint">Die Reihenfolge ist automatisch alphabetisch.</p>
+            <p className="hint">{L("Die Reihenfolge ist automatisch alphabetisch.", "The order is automatically alphabetical.")}</p>
             <div className="mgr-add">
-              <input value={newCat} onChange={(e) => setNewCat(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addCategory()} placeholder="Neuer Bereich …" />
-              <button className="btn primary" onClick={addCategory}>Hinzufügen</button>
+              <input value={newCat} onChange={(e) => setNewCat(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addCategory()} placeholder={L("Neuer Bereich …", "New area …")} />
+              <button className="btn primary" onClick={addCategory}>{L("Hinzufügen", "Add")}</button>
             </div>
             <ul className="mgr-list">
               {sortedCats.map((c) => (
                 <li key={c}><span className="dot" style={{ background: catColor(c) }} />
                   <span className="mgr-name">{c}</span>
-                  <button className="icon" onClick={() => deleteCategory(c)} title="Bereich löschen"><X size={15} /></button></li>
+                  <button className="icon" onClick={() => deleteCategory(c)} title={L("Bereich löschen", "Delete area")}><X size={15} /></button></li>
               ))}
-              {sortedCats.length === 0 && <li className="mgr-empty">Noch keine Bereiche angelegt.</li>}
+              {sortedCats.length === 0 && <li className="mgr-empty">{L("Noch keine Bereiche angelegt.", "No areas created yet.")}</li>}
             </ul>
           </div>
         </div>
@@ -1407,20 +1424,20 @@ export default function App() {
       {cmgrOpen && (
         <div className="modal-bg" onClick={() => setCmgrOpen(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-head"><h2>Companies verwalten</h2>
+            <div className="modal-head"><h2>{L("Companies verwalten", "Manage companies")}</h2>
               <button className="icon" onClick={() => setCmgrOpen(false)}><X size={18} /></button></div>
-            <p className="hint">Die Reihenfolge ist automatisch alphabetisch.</p>
+            <p className="hint">{L("Die Reihenfolge ist automatisch alphabetisch.", "The order is automatically alphabetical.")}</p>
             <div className="mgr-add">
-              <input value={newCompany} onChange={(e) => setNewCompany(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addCompany()} placeholder="Neue Company …" />
-              <button className="btn primary" onClick={addCompany}>Hinzufügen</button>
+              <input value={newCompany} onChange={(e) => setNewCompany(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addCompany()} placeholder={L("Neue Company …", "New company …")} />
+              <button className="btn primary" onClick={addCompany}>{L("Hinzufügen", "Add")}</button>
             </div>
             <ul className="mgr-list">
               {sortedCompanies.map((c) => (
                 <li key={c}><Building2 size={15} style={{ color: C.cool, flex: "none" }} />
                   <span className="mgr-name">{c}</span>
-                  <button className="icon" onClick={() => deleteCompany(c)} title="Company löschen"><X size={15} /></button></li>
+                  <button className="icon" onClick={() => deleteCompany(c)} title={L("Company löschen", "Delete company")}><X size={15} /></button></li>
               ))}
-              {sortedCompanies.length === 0 && <li className="mgr-empty">Noch keine Companies angelegt.</li>}
+              {sortedCompanies.length === 0 && <li className="mgr-empty">{L("Noch keine Companies angelegt.", "No companies created yet.")}</li>}
             </ul>
           </div>
         </div>
@@ -1437,14 +1454,14 @@ function DashList({ title, tone, items, onOpen }) {
   return (
     <div className="dash-card">
       <div className="dash-card-h" style={{ color: tone }}>{title} <em>{items.length}</em></div>
-      {items.length === 0 ? <div className="dash-empty">Nichts offen.</div> :
+      {items.length === 0 ? <div className="dash-empty">{L("Nichts offen.", "Nothing open.")}</div> :
         items.slice(0, 6).map((t) => (
           <button key={keyOf(t)} className="dash-row" style={{ borderLeftColor: tone }} onClick={() => onOpen(t._scope, t)}>
             <span className="dash-row-t">{t.title}</span>
             <span className="dash-row-m">{t.due ? fmtDate(t.due) + " · " + relLabel(t.due) : ""}</span>
           </button>
         ))}
-      {items.length > 6 && <div className="dash-more">+{items.length - 6} weitere</div>}
+      {items.length > 6 && <div className="dash-more">+{items.length - 6} {L("weitere", "more")}</div>}
     </div>
   );
 }
@@ -1457,32 +1474,32 @@ function ReminderGroup({ tone, label, items }) {
       </div>
       <ul>
         {items.slice(0, 4).map((t) => <li key={keyOf(t)}>{t.title}</li>)}
-        {items.length > 4 && <li className="more">+{items.length - 4} weitere</li>}
+        {items.length > 4 && <li className="more">+{items.length - 4} {L("weitere", "more")}</li>}
       </ul>
     </div>
   );
 }
 
 function PrintDoc({ items }) {
-  const now = new Date().toLocaleString("de-DE");
+  const now = new Date().toLocaleString(getLang() === "en" ? "en-GB" : "de-DE");
   return (
     <div className="printable">
       <div className="p-head">
         <Plane className="p-mark" strokeWidth={2.2} />
         <div className="p-titlewrap"><div className="p-title">TO DO APP</div></div>
-        <div className="p-date">Erstellt: {now}<br />{items.length} Aufgabe(n)</div>
+        <div className="p-date">{L("Erstellt:", "Created:")} {now}<br />{items.length} {L("Aufgabe(n)", "task(s)")}</div>
       </div>
       <table className="p-table">
-        <thead><tr><th>Titel</th><th>Bereich</th><th>Prio</th><th>Status</th><th>Eskal.</th><th>Fällig</th><th>Ansprechperson</th><th>Company</th></tr></thead>
+        <thead><tr><th>{L("Titel", "Title")}</th><th>{L("Bereich", "Area")}</th><th>{L("Prio", "Prio")}</th><th>{L("Status", "Status")}</th><th>{L("Eskal.", "Escal.")}</th><th>{L("Fällig", "Due")}</th><th>{L("Ansprechperson", "Contact")}</th><th>{L("Company", "Company")}</th></tr></thead>
         <tbody>
           {items.map((t) => (
             <tr key={keyOf(t)}>
               <td><strong>{t.title}</strong>{t.notes ? <div className="p-note">{t.notes}</div> : null}
-                {t.start && <div className="p-note">Start: {fmtDay(t.start)}</div>}
-                {t.updatedAt && <div className="p-note">Letztes Update: {fmtDay(t.updatedAt)}</div>}
-                {(t.checklist || []).length > 0 && <div className="p-note">Checkliste ({t.checklist.filter((c) => c.done).length}/{t.checklist.length}): {t.checklist.map((c) => `${c.done ? "☑" : "☐"} ${c.text}`).join("  ·  ")}</div>}
-                {(t.attachments || []).length > 0 && <div className="p-note">Anhänge: {t.attachments.map((a) => a.name).join(", ")}</div>}
-                {(t.images || []).length > 0 && <div className="p-note">Bilder: {t.images.length}</div>}
+                {t.start && <div className="p-note">{L("Start:", "Start:")} {fmtDay(t.start)}</div>}
+                {t.updatedAt && <div className="p-note">{L("Letztes Update:", "Last update:")} {fmtDay(t.updatedAt)}</div>}
+                {(t.checklist || []).length > 0 && <div className="p-note">{L("Checkliste", "Checklist")} ({t.checklist.filter((c) => c.done).length}/{t.checklist.length}): {t.checklist.map((c) => `${c.done ? "☑" : "☐"} ${c.text}`).join("  ·  ")}</div>}
+                {(t.attachments || []).length > 0 && <div className="p-note">{L("Anhänge:", "Attachments:")} {t.attachments.map((a) => a.name).join(", ")}</div>}
+                {(t.images || []).length > 0 && <div className="p-note">{L("Bilder:", "Images:")} {t.images.length}</div>}
                 {(t.log || []).length > 0 && <div className="p-note">{(t.log || []).map((e) => `${dt(e.date)}: ${e.text}`).join("  •  ")}</div>}</td>
               <td>{catDisplay(t.category) || "—"}</td>
               <td>{(PRIORITIES[t.priority] || PRIORITIES[""]).label || "—"}</td>
@@ -1495,22 +1512,22 @@ function PrintDoc({ items }) {
           ))}
         </tbody>
       </table>
-      <div className="p-foot">Zur internen Verwendung · © Copyright by Patrick Thorn</div>
+      <div className="p-foot">{L("Zur internen Verwendung", "For internal use")} · © Copyright by Patrick Thorn</div>
     </div>
   );
 }
 
 function PersonsPrintDoc({ items, openCount }) {
-  const now = new Date().toLocaleString("de-DE");
+  const now = new Date().toLocaleString(getLang() === "en" ? "en-GB" : "de-DE");
   return (
     <div className="printable">
       <div className="p-head">
         <Plane className="p-mark" strokeWidth={2.2} />
-        <div className="p-titlewrap"><div className="p-title">Ansprechpersonen</div></div>
-        <div className="p-date">Erstellt: {now}<br />{items.length} Person(en)</div>
+        <div className="p-titlewrap"><div className="p-title">{L("Ansprechpersonen", "Contacts")}</div></div>
+        <div className="p-date">{L("Erstellt:", "Created:")} {now}<br />{items.length} {L("Person(en)", "person(s)")}</div>
       </div>
       <table className="p-table">
-        <thead><tr><th>Name</th><th>Funktion</th><th>Company</th><th>Themen</th><th>E-Mail</th><th>Telefon</th><th>Offen</th></tr></thead>
+        <thead><tr><th>{L("Name", "Name")}</th><th>{L("Funktion", "Function")}</th><th>{L("Company", "Company")}</th><th>{L("Themen", "Topics")}</th><th>{L("E-Mail", "Email")}</th><th>{L("Telefon", "Phone")}</th><th>{L("Offen", "Open")}</th></tr></thead>
         <tbody>
           {items.map((p) => (
             <tr key={p.id}>
@@ -1525,7 +1542,7 @@ function PersonsPrintDoc({ items, openCount }) {
           ))}
         </tbody>
       </table>
-      <div className="p-foot">Zur internen Verwendung · © Copyright by Patrick Thorn</div>
+      <div className="p-foot">{L("Zur internen Verwendung", "For internal use")} · © Copyright by Patrick Thorn</div>
     </div>
   );
 }
@@ -1542,7 +1559,11 @@ const css = `
 .hd-inner{display:flex;align-items:center;gap:16px;padding:20px 24px;}
 .hd-mark{width:34px;height:34px;color:${C.white};opacity:.97;flex:none;}
 .hd h1{color:${C.white};font-size:24px;line-height:1.1;letter-spacing:.04em;}
-.hd-profile{margin-left:auto;text-align:right;}
+.hd-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
+.lang-switch{display:flex;gap:3px;background:rgba(255,255,255,.18);border-radius:8px;padding:3px;}
+.lang-b{font-family:inherit;font-size:12px;font-weight:800;cursor:pointer;border:none;background:transparent;color:rgba(255,255,255,.85);border-radius:6px;padding:5px 9px;}
+.lang-b.on{background:${C.white};color:${C.burgundyDark};}
+.hd-profile{text-align:right;}
 .hd-profile label{display:block;color:rgba(255,255,255,.82);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
 .hd-profile input{width:190px;max-width:46vw;text-align:center;border:none;border-radius:7px;padding:7px 10px;font-size:14px;font-weight:700;color:${C.burgundyDark};background:${C.white};}
 .tabs{display:flex;align-items:center;gap:4px;padding:0 24px;background:${C.burgundyDark};}

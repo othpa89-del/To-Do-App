@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { Plane } from "lucide-react";
+import { L, useLang } from "./i18n.js";
 
 // muss mit REMEMBER_KEY in main.jsx übereinstimmen
 const REMEMBER_KEY = "ctc_remember";
 
 export default function Login({ supabase, recovery = false, onDone, notice = "" }) {
+  useLang();
   // signin | signup | forgot | reset
   const [mode, setMode] = useState(recovery ? "reset" : "signin");
   const [email, setEmail] = useState("");
@@ -28,32 +30,32 @@ export default function Login({ supabase, recovery = false, onDone, notice = "" 
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({ email: email.trim(), password: pw });
         if (error) throw error;
-        setMsg("Konto erstellt. Du kannst dich jetzt anmelden.");
+        setMsg(L("Konto erstellt. Du kannst dich jetzt anmelden.", "Account created. You can sign in now."));
         setMode("signin");
       } else if (mode === "forgot") {
         const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: window.location.href });
         if (error) throw error;
-        setMsg("Falls ein Konto mit dieser E-Mail existiert, wurde ein Link zum Zurücksetzen gesendet. Bitte E-Mail prüfen.");
+        setMsg(L("Falls ein Konto mit dieser E-Mail existiert, wurde ein Link zum Zurücksetzen gesendet. Bitte E-Mail prüfen.", "If an account exists for this email, a reset link has been sent. Please check your email."));
       } else if (mode === "reset") {
-        if ((pw || "").length < 6) throw new Error("Passwort muss mindestens 6 Zeichen haben.");
-        if (pw !== pw2) throw new Error("Die Passwörter stimmen nicht überein.");
+        if ((pw || "").length < 6) throw new Error(L("Passwort muss mindestens 6 Zeichen haben.", "Password must be at least 6 characters."));
+        if (pw !== pw2) throw new Error(L("Die Passwörter stimmen nicht überein.", "The passwords do not match."));
         const { error } = await supabase.auth.updateUser({ password: pw });
         if (error) throw error;
-        setMsg("Passwort geändert. Du bist jetzt angemeldet.");
+        setMsg(L("Passwort geändert. Du bist jetzt angemeldet.", "Password changed. You are now signed in."));
         if (onDone) setTimeout(() => onDone(), 800);
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: pw });
         if (error) throw error;
       }
     } catch (e) {
-      setErr(e.message || "Vorgang fehlgeschlagen.");
+      setErr(e.message || L("Vorgang fehlgeschlagen.", "Operation failed."));
     } finally {
       setBusy(false);
     }
   }
 
-  const sub = mode === "forgot" ? "Passwort zurücksetzen" : mode === "reset" ? "Neues Passwort" : "Anmeldung";
-  const cta = mode === "signin" ? "Anmelden" : mode === "signup" ? "Konto erstellen" : mode === "forgot" ? "Link senden" : "Passwort speichern";
+  const sub = mode === "forgot" ? L("Passwort zurücksetzen", "Reset password") : mode === "reset" ? L("Neues Passwort", "New password") : L("Anmeldung", "Sign in");
+  const cta = mode === "signin" ? L("Anmelden", "Sign in") : mode === "signup" ? L("Konto erstellen", "Create account") : mode === "forgot" ? L("Link senden", "Send link") : L("Passwort speichern", "Save password");
 
   return (
     <div style={S.wrap}>
@@ -67,19 +69,19 @@ export default function Login({ supabase, recovery = false, onDone, notice = "" 
         {notice && <div style={S.err}>{notice}</div>}
 
         {mode !== "reset" && (
-          <input style={S.inp} type="email" placeholder="E-Mail" value={email}
+          <input style={S.inp} type="email" placeholder={L("E-Mail", "Email")} value={email}
             onChange={(e) => setEmail(e.target.value)} autoComplete="username" />
         )}
 
         {mode !== "forgot" && (
-          <input style={S.inp} type="password" placeholder={mode === "reset" ? "Neues Passwort" : "Passwort"} value={pw}
+          <input style={S.inp} type="password" placeholder={mode === "reset" ? L("Neues Passwort", "New password") : L("Passwort", "Password")} value={pw}
             onChange={(e) => setPw(e.target.value)}
             autoComplete={mode === "signin" ? "current-password" : "new-password"}
             onKeyDown={(e) => e.key === "Enter" && mode !== "reset" && submit()} />
         )}
 
         {mode === "reset" && (
-          <input style={S.inp} type="password" placeholder="Neues Passwort wiederholen" value={pw2}
+          <input style={S.inp} type="password" placeholder={L("Neues Passwort wiederholen", "Repeat new password")} value={pw2}
             onChange={(e) => setPw2(e.target.value)} autoComplete="new-password"
             onKeyDown={(e) => e.key === "Enter" && submit()} />
         )}
@@ -88,7 +90,7 @@ export default function Login({ supabase, recovery = false, onDone, notice = "" 
           <label style={S.remember}>
             <input type="checkbox" checked={remember} onChange={(e) => toggleRemember(e.target.checked)}
               style={{ width: 16, height: 16, margin: 0, accentColor: "#AF1E65" }} />
-            Angemeldet bleiben
+            {L("Angemeldet bleiben", "Stay signed in")}
           </label>
         )}
 
@@ -101,7 +103,7 @@ export default function Login({ supabase, recovery = false, onDone, notice = "" 
 
         {mode === "signin" && (
           <button style={S.link} onClick={() => { setErr(""); setMsg(""); setMode("forgot"); }}>
-            Passwort vergessen?
+            {L("Passwort vergessen?", "Forgot password?")}
           </button>
         )}
 
@@ -110,9 +112,9 @@ export default function Login({ supabase, recovery = false, onDone, notice = "" 
             setErr(""); setMsg("");
             setMode(mode === "signin" ? "signup" : "signin");
           }}>
-            {mode === "signin" ? "Noch kein Konto? Registrieren"
-              : mode === "signup" ? "Schon ein Konto? Anmelden"
-              : "Zurück zur Anmeldung"}
+            {mode === "signin" ? L("Noch kein Konto? Registrieren", "No account yet? Sign up")
+              : mode === "signup" ? L("Schon ein Konto? Anmelden", "Already have an account? Sign in")
+              : L("Zurück zur Anmeldung", "Back to sign in")}
           </button>
         )}
       </div>
