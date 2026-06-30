@@ -892,7 +892,7 @@ export default function App() {
           </div>
         ) : view === "meetings" ? (
           <Meetings persons={persons} categories={sortedCats} profile={profile}
-            companyColor={companyColor} onCreateTask={addExternalTask} />
+            companyColor={companyColor} onCreateTask={addExternalTask} onMeetingsChange={setMeetings} />
         ) : view === "persons" ? (
           <div className="grid">
             <aside className="panel">

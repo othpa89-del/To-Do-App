@@ -130,7 +130,7 @@ function RichText({ value, onChange, placeholder }) {
 }
 
 // ===========================================================================
-export default function Meetings({ persons = [], categories = [], profile = "", onCreateTask, companyColor }) {
+export default function Meetings({ persons = [], categories = [], profile = "", onCreateTask, companyColor, onMeetingsChange }) {
   const [meetings, setMeetings] = useState([]);
   const [types, setTypes] = useState(MEETING_TYPES);
   const [loaded, setLoaded] = useState(false);
@@ -150,9 +150,9 @@ export default function Meetings({ persons = [], categories = [], profile = "", 
 
   useEffect(() => {
     let on = true;
-    loadMeetings().then((m) => { if (on) { setMeetings(m); setLoaded(true); } });
+    loadMeetings().then((m) => { if (on) { setMeetings(m); setLoaded(true); if (onMeetingsChange) onMeetingsChange(m); } });
     loadTypes().then((t) => on && setTypes(t));
-    const h = () => { loadMeetings().then((m) => on && setMeetings(m)); loadTypes().then((t) => on && setTypes(t)); };
+    const h = () => { loadMeetings().then((m) => { if (on) { setMeetings(m); if (onMeetingsChange) onMeetingsChange(m); } }); loadTypes().then((t) => on && setTypes(t)); };
     window.addEventListener("ctc:remote", h);
     return () => { on = false; window.removeEventListener("ctc:remote", h); };
   }, []);
@@ -166,6 +166,7 @@ export default function Meetings({ persons = [], categories = [], profile = "", 
     setMeetings((prev) => {
       const next = fn(prev);
       saveMeetings(next).then((ok) => { if (!ok) flash("Speichern fehlgeschlagen – evtl. zu große Anhänge."); });
+      if (onMeetingsChange) onMeetingsChange(next); // Export-Tab (App) live aktuell halten
       return next;
     });
   }
