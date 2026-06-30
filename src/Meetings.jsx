@@ -708,6 +708,68 @@ export function exportWord(m) {
   downloadFile("﻿" + html, `Protokoll_${(m.title || "Meeting").replace(/\s+/g, "_")}.doc`, "application/msword");
 }
 
+// Kompaktes, inline-formatiertes HTML-Fragment fürs Einfügen in E-Mails
+export function meetingToEmailHtml(m) {
+  const esc = (s) => (s == null ? "" : String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"));
+  const P = "margin:0 0 7px;font-size:13px;color:#1f2937;";
+  const H = "margin:14px 0 4px;font-size:12px;color:#871C54;font-weight:bold;text-transform:uppercase;letter-spacing:.03em;";
+  const o = [];
+  o.push(`<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:13px;line-height:1.5;">`);
+  o.push(`<div style="font-size:18px;font-weight:bold;color:#871C54;">Besprechungsprotokoll</div>`);
+  if (m.title) o.push(`<div style="font-size:14px;font-weight:bold;margin-top:2px;">${esc(m.title)}</div>`);
+  o.push(`<div style="color:#6b7280;font-size:12px;margin-bottom:10px;">${esc(fmtDay(m.date))}${m.start ? " · " + esc(m.start) + (m.end ? "–" + esc(m.end) : "") : ""}${m.type ? " · " + esc(m.type) : ""}${m.status ? " · " + esc(m.status) : ""}</div>`);
+  const extra = meetingMetaRows(m).filter(([k]) => !["Datum", "Typ", "Status", "Zeit"].includes(k));
+  if (extra.length) o.push(extra.map(([k, v]) => `<div style="${P}"><b>${esc(k)}:</b> ${esc(v)}</div>`).join(""));
+  if ((m.participants || []).length) o.push(`<div style="${H}">Teilnehmer</div><div style="${P}">${m.participants.map((p) => esc(p.name) + (p.company ? ` (${esc(p.company)})` : "")).join(", ")}</div>`);
+  if ((m.absentees || []).length) o.push(`<div style="${H}">Abwesend</div><div style="${P}">${m.absentees.map((p) => esc(p.name)).join(", ")}</div>`);
+  if ((m.agenda || []).length) {
+    o.push(`<div style="${H}">Agenda &amp; Mitschrift</div>`);
+    m.agenda.forEach((a, i) => {
+      o.push(`<div style="margin:0 0 8px;"><div style="font-weight:bold;">${i + 1}. ${esc(a.title)}${a.done ? " ✓" : ""}</div>`);
+      if (a.desc) o.push(`<div style="color:#6b7280;font-size:12px;">${esc(a.desc)}</div>`);
+      if (a.notesHtml) o.push(`<div style="font-size:13px;margin:3px 0;">${sanitizeHtml(a.notesHtml)}</div>`);
+      [["Entscheidungen", a.decisions], ["Diskussion", a.discussion], ["Risiken", a.risks], ["Offene Fragen", a.openQuestions]]
+        .filter((x) => x[1]).forEach(([k, v]) => o.push(`<div style="${P}"><b>${esc(k)}:</b> ${esc(v)}</div>`));
+      o.push(`</div>`);
+    });
+  }
+  if ((m.decisions || []).length) { o.push(`<div style="${H}">Entscheidungen</div>`); m.decisions.forEach((d) => o.push(`<div style="${P}">• <b>${esc(d.title)}</b> (${esc(d.status)}${d.owner ? ", " + esc(d.owner) : ""}${d.date ? ", " + esc(fmtDay(d.date)) : ""})${d.desc ? " – " + esc(d.desc) : ""}</div>`)); }
+  if ((m.actionItems || []).length) { o.push(`<div style="${H}">Aufgaben</div>`); m.actionItems.forEach((a) => o.push(`<div style="${P}">☐ ${esc(a.text)}</div>`)); }
+  if (m.openPoints) o.push(`<div style="${H}">Offene Punkte</div><div style="${P}">${esc(m.openPoints).replace(/\n/g, "<br>")}</div>`);
+  if (m.nextMeeting && (m.nextMeeting.date || m.nextMeeting.note)) o.push(`<div style="${H}">Nächstes Meeting</div><div style="${P}">${esc(fmtDay(m.nextMeeting.date))} ${esc(m.nextMeeting.note || "")}</div>`);
+  o.push(`<div style="margin-top:16px;color:#9ca3af;font-size:11px;">© Copyright by Patrick Thorn</div>`);
+  o.push(`</div>`);
+  return o.join("");
+}
+
+// Protokoll formatiert (HTML + Text) in die Zwischenablage legen
+export async function copyMeetingToClipboard(m) {
+  const html = meetingToEmailHtml(m);
+  const text = meetingToText(m);
+  try {
+    if (navigator.clipboard && window.ClipboardItem) {
+      await navigator.clipboard.write([new window.ClipboardItem({
+        "text/html": new Blob([html], { type: "text/html" }),
+        "text/plain": new Blob([text], { type: "text/plain" }),
+      })]);
+      return true;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) { await navigator.clipboard.writeText(text); return true; }
+  } catch {}
+  try {
+    const ta = document.createElement("textarea"); ta.value = text;
+    ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.focus(); ta.select();
+    const ok = document.execCommand("copy"); ta.remove(); return ok;
+  } catch { return false; }
+}
+
+// Mailprogramm mit Betreff + Text öffnen
+export function emailMeeting(m) {
+  const subject = `Protokoll: ${m.title || "Meeting"}${m.date ? " (" + fmtDay(m.date) + ")" : ""}`;
+  const body = meetingToText(m);
+  window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
 // ===========================================================================
 const css = `
 .mm-root{font-family:'Mulish',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:${C.body};}

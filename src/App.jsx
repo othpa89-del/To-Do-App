@@ -3,9 +3,9 @@ import * as XLSX from "xlsx";
 import {
   User, Building2, Printer, FileSpreadsheet, Check, Pencil, X, Square, CheckSquare,
   Bell, Settings, Search, ExternalLink, Repeat, Download, Upload, Database, Plus, Mail, Phone,
-  MessageSquare, ChevronUp, ChevronDown, Plane, FileText,
+  MessageSquare, ChevronUp, ChevronDown, Plane, FileText, Copy,
 } from "lucide-react";
-import Meetings, { loadMeetings, meetingToMarkdown, meetingToText, exportWord, printMeeting } from "./Meetings.jsx";
+import Meetings, { loadMeetings, meetingToMarkdown, meetingToText, exportWord, printMeeting, copyMeetingToClipboard, emailMeeting } from "./Meetings.jsx";
 
 // --- Markenfarben (Farbchapter) ---
 const C = {
@@ -822,7 +822,7 @@ export default function App() {
 
             <div className="card">
               <h2>Meeting-Protokolle exportieren</h2>
-              <p className="hint">Pro Meeting als PDF/Druck, Word, Markdown oder TXT. Anlegen/Bearbeiten im Tab „Meeting Minutes".</p>
+              <p className="hint">Pro Meeting: „Kopieren" (formatiert in E-Mail einfügen), „E-Mail" (Mailprogramm öffnen) oder als PDF/Druck, Word, Markdown, TXT. Anlegen/Bearbeiten im Tab „Meeting Minutes".</p>
               {meetings.length === 0 ? <div className="empty">Noch keine Meetings angelegt.</div> : (
                 <ul className="mexp-list">
                   {meetings.slice().sort((a, b) => (b.date || "").localeCompare(a.date || "")).map((mt) => (
@@ -832,6 +832,8 @@ export default function App() {
                         <span className="mexp-meta">{fmtDay(mt.date)}{mt.type ? " · " + mt.type : ""}{mt.status ? " · " + mt.status : ""}</span>
                       </div>
                       <div className="mexp-actions">
+                        <button className="btn out" onClick={async () => { const ok = await copyMeetingToClipboard(mt); flash(ok ? "Protokoll kopiert – in E-Mail mit Strg/Cmd+V einfügen." : "Kopieren nicht möglich."); }}><Copy size={14} /> Kopieren</button>
+                        <button className="btn out" onClick={() => emailMeeting(mt)}><Mail size={14} /> E-Mail</button>
                         <button className="btn out" onClick={() => printMeeting(mt)}><Printer size={14} /> PDF</button>
                         <button className="btn out" onClick={() => exportWord(mt)}><FileText size={14} /> Word</button>
                         <button className="btn out" onClick={() => downloadBlob(meetingToMarkdown(mt), `Protokoll_${(mt.title || "Meeting").replace(/\s+/g, "_")}.md`, "text/markdown")}>MD</button>
