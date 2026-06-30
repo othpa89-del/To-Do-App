@@ -719,7 +719,7 @@ function meetingHTML(m, forWord) {
   const att = (m.attachments || []).map((f) => `<li><a href="${f.dataUrl}" download="${esc(f.name) || "datei"}">${esc(f.name)}</a></li>`).join("");
   const voc = (m.voice || []).map((v) => `<li>${esc(v.name)}</li>`).join("");
   const style = `
-    body{font-family:Arial,"Helvetica Neue",Helvetica,"Segoe UI",Roboto,sans-serif;color:#1f2937;margin:0;padding:${forWord ? "28px 32px" : "14mm 16mm"};}
+    body{font-family:Calibri,Candara,"Segoe UI","Helvetica Neue",Arial,sans-serif;color:#1f2937;margin:0;padding:${forWord ? "28px 32px" : "14mm 16mm"};}
     *{font-family:inherit;}
     .hd{display:flex;align-items:center;gap:14px;border-bottom:3px solid ${C.burgundy};padding-bottom:12px;margin-bottom:16px;}
     .logo{width:40px;height:40px;color:${C.burgundy};}
