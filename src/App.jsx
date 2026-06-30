@@ -4,6 +4,7 @@ import {
   User, Building2, Printer, FileSpreadsheet, Check, Pencil, X, Square, CheckSquare,
   Bell, Settings, Search, ExternalLink, Repeat, Download, Upload, Database, Plus, Mail, Phone,
   MessageSquare, ChevronUp, ChevronDown, Plane, FileText, Copy, GripVertical, Paperclip, Image as ImageIcon, ListChecks,
+  List, Kanban,
 } from "lucide-react";
 import Sortable from "sortablejs";
 import Meetings, { loadMeetings, meetingToMarkdown, meetingToText, exportWord, printMeeting, copyMeetingToClipboard, emailMeeting } from "./Meetings.jsx";
@@ -168,7 +169,7 @@ export default function App() {
   const [editId, setEditId] = useState(null);
   const [clOpen, setClOpen] = useState(false);  // Checkliste-Abschnitt offen
   const [atOpen, setAtOpen] = useState(false);  // Anhänge-Abschnitt offen
-  const [pLayout, setPLayout] = useState("cards"); // Persons: cards | list
+  const [pLayout, setPLayout] = useState("list"); // Persons: list | cards (Standard: Liste)
   const [taskLayout, setTaskLayout] = useState("list"); // Aufgaben: list | board
   const [editScope, setEditScope] = useState(null);
   const [profile, setProfile] = useState("");
@@ -949,8 +950,8 @@ export default function App() {
                   </select>
                 </div>
                 <div className="seg viewtog">
-                  <button className={"seg-b" + (pLayout === "cards" ? " on" : "")} onClick={() => setPLayout("cards")}>Karten</button>
-                  <button className={"seg-b" + (pLayout === "list" ? " on" : "")} onClick={() => setPLayout("list")}>Liste</button>
+                  <button className={"seg-b" + (pLayout === "list" ? " on" : "")} onClick={() => setPLayout("list")} title="Liste"><List size={15} /> Liste</button>
+                  <button className={"seg-b" + (pLayout === "cards" ? " on" : "")} onClick={() => setPLayout("cards")} title="Karten"><Square size={15} /> Karten</button>
                 </div>
               </div>
               {persons.length === 0 && <div className="empty">Noch keine Ansprechpersonen. Links die erste anlegen.</div>}
@@ -1261,6 +1262,12 @@ export default function App() {
                 <h2>Aufgaben</h2>
                 <button className="btn primary" onClick={openNewTask}><Plus size={16} /> Neue Aufgabe</button>
               </div>
+              <div className="search-top">
+                <div className="search"><Search size={15} />
+                  <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Aufgaben nach Stichwort suchen … (Titel, Notiz, Person, Company, Bereich)" />
+                  {search && <button className="clear" onClick={() => setSearch("")}><X size={14} /></button>}
+                </div>
+              </div>
               <div className="toolbar">
                 <div className="tb-group"><span>Bereich</span>
                   <select value={filterCat} onChange={(e) => setFilterCat(e.target.value)}>
@@ -1291,8 +1298,8 @@ export default function App() {
                   {groupByCat ? <CheckSquare size={15} /> : <Square size={15} />} Nach Bereich
                 </button>
                 <div className="seg viewtog">
-                  <button className={"seg-b" + (taskLayout === "list" ? " on" : "")} onClick={() => setTaskLayout("list")}>Liste</button>
-                  <button className={"seg-b" + (taskLayout === "board" ? " on" : "")} onClick={() => setTaskLayout("board")}>Board</button>
+                  <button className={"seg-b" + (taskLayout === "list" ? " on" : "")} onClick={() => setTaskLayout("list")} title="Liste"><List size={15} /> Liste</button>
+                  <button className={"seg-b" + (taskLayout === "board" ? " on" : "")} onClick={() => setTaskLayout("board")} title="Board"><Kanban size={15} /> Board</button>
                 </div>
               </div>
 
@@ -1355,12 +1362,6 @@ export default function App() {
                 </>
               )}
 
-              <div className="search-bottom">
-                <div className="search"><Search size={15} />
-                  <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Aufgaben durchsuchen …" />
-                  {search && <button className="clear" onClick={() => setSearch("")}><X size={14} /></button>}
-                </div>
-              </div>
             </main>
           </div>
         )}
@@ -1572,7 +1573,7 @@ aside.panel .card{position:sticky;top:16px;}
 .ctc-root input:focus,.ctc-root select:focus,.ctc-root textarea:focus{border-color:${C.burgundy};box-shadow:0 0 0 3px rgba(175,30,101,.13);}
 .ctc-root select:disabled{background:${C.fill};color:${C.cool};}
 .seg{display:flex;gap:6px;}
-.seg-b{flex:1;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;padding:9px;border-radius:8px;border:1px solid ${C.line};background:${C.white};color:${C.grey};}
+.seg-b{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;padding:9px;border-radius:8px;border:1px solid ${C.line};background:${C.white};color:${C.grey};}
 .seg-b.on{background:${C.burgundy};border-color:${C.burgundy};color:${C.white};}
 .actions{display:flex;gap:9px;margin-top:6px;}
 .btn{display:inline-flex;align-items:center;gap:7px;font-family:inherit;font-weight:800;font-size:14px;cursor:pointer;border-radius:8px;padding:10px 16px;border:1px solid transparent;transition:.15s;}
@@ -1588,8 +1589,8 @@ aside.panel .card{position:sticky;top:16px;}
 
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:${C.white};border:1px solid ${C.line};border-radius:10px;padding:8px 10px;margin-bottom:12px;}
 .search{display:flex;align-items:center;gap:7px;border:1px solid ${C.line};border-radius:8px;padding:0 10px;min-width:170px;flex:1;max-width:280px;color:${C.cool};}
-.search-bottom{margin-top:18px;padding-top:14px;border-top:1px solid ${C.fill};display:flex;justify-content:center;}
-.search-bottom .search{max-width:420px;width:100%;flex:none;}
+.search-top{margin:0 0 12px;display:flex;}
+.search-top .search{max-width:none;width:100%;flex:1;}
 .search input{border:none;padding:8px 0;box-shadow:none !important;}
 .search .clear{background:none;border:none;color:${C.cool};cursor:pointer;display:flex;}
 .tb-group{display:flex;align-items:center;gap:5px;}
